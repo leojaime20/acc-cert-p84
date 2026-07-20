@@ -32,9 +32,24 @@ export const finalizeInspection = onCall<FinalizeRequest>(
       const photoSnapshots = await transaction.get(inspectionRef.collection('photos'));
       const photos = photoSnapshots.docs.map((photo) => photo.data());
       const pending: string[] = [];
+      const summary = {
+        total: itemSnapshots.size,
+        notStarted: 0,
+        approved: 0,
+        partiallyApproved: 0,
+        rejected: 0,
+        notApplicable: 0,
+      };
+
+      if (itemSnapshots.empty) pending.push('O checklist da inspeção não possui itens.');
 
       for (const itemSnapshot of itemSnapshots.docs) {
         const item = itemSnapshot.data();
+        if (item.status === 'not_started') summary.notStarted += 1;
+        if (item.status === 'approved') summary.approved += 1;
+        if (item.status === 'partially_approved') summary.partiallyApproved += 1;
+        if (item.status === 'rejected') summary.rejected += 1;
+        if (item.status === 'not_applicable') summary.notApplicable += 1;
         const label = item.code || `Item ${item.itemNumber || itemSnapshot.id}`;
         if (item.required && item.status === 'not_started')
           pending.push(`${label}: não verificado`);
@@ -60,6 +75,7 @@ export const finalizeInspection = onCall<FinalizeRequest>(
         status: 'completed',
         completedAt: FieldValue.serverTimestamp(),
         completedBy: user.uid,
+        summary,
         updatedAt: FieldValue.serverTimestamp(),
         reportStatus: 'pending',
         reportError: FieldValue.delete(),

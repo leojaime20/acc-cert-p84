@@ -16,6 +16,7 @@ export interface ChecklistTemplateItem {
   id: string;
   itemNumber: number;
   description: string;
+  verificationInstruction?: string;
   order: number;
   required: boolean;
   photoRequired: boolean;

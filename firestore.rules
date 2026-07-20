@@ -26,6 +26,21 @@ service cloud.firestore {
       return status in ['draft', 'completed', 'reopened', 'cancelled'];
     }
 
+    function validItemStatus(status) {
+      return status in ['not_started', 'approved', 'partially_approved', 'rejected', 'not_applicable'];
+    }
+
+    function validSummary(summary, previousSummary) {
+      return summary.total == previousSummary.total
+        && summary.notStarted >= 0
+        && summary.approved >= 0
+        && summary.partiallyApproved >= 0
+        && summary.rejected >= 0
+        && summary.notApplicable >= 0
+        && summary.notStarted + summary.approved + summary.partiallyApproved
+          + summary.rejected + summary.notApplicable == summary.total;
+    }
+
     match /users/{userId} {
       allow read: if activeUser() && (request.auth.uid == userId || isAdmin());
       allow create, update, delete: if isAdmin();
@@ -77,6 +92,8 @@ service cloud.firestore {
         && request.resource.data.inspectorEmail == resource.data.inspectorEmail
         && request.resource.data.checklistTemplateId == resource.data.checklistTemplateId
         && request.resource.data.checklistTemplateVersion == resource.data.checklistTemplateVersion
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['summary', 'updatedAt'])
+        && validSummary(request.resource.data.summary, resource.data.summary)
       );
       allow delete: if false;
 
@@ -88,10 +105,18 @@ service cloud.firestore {
           return getAfter(/databases/$(database)/documents/inspections/$(inspectionId)).data;
         }
         allow read: if hasProject(inspection().projectId);
-        allow create, update: if activeUser()
+        allow create: if activeUser()
           && hasProject(inspectionAfterWrite().projectId)
           && inspectionAfterWrite().inspectorId == request.auth.uid
-          && inspectionAfterWrite().status in ['draft', 'reopened'];
+          && inspectionAfterWrite().status in ['draft', 'reopened']
+          && validItemStatus(request.resource.data.status);
+        allow update: if activeUser()
+          && hasProject(inspectionAfterWrite().projectId)
+          && inspectionAfterWrite().inspectorId == request.auth.uid
+          && inspectionAfterWrite().status in ['draft', 'reopened']
+          && validItemStatus(request.resource.data.status)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'comment', 'recommendation', 'updatedAt']);
         allow delete: if false;
       }
 

@@ -34,6 +34,9 @@ export interface Inspection {
   updatedAt: Timestamp;
   completedAt?: Timestamp;
   completedBy?: string;
+  reportStatus?: 'pending' | 'processing' | 'completed' | 'error';
+  reportStoragePath?: string;
+  reportError?: string;
 }
 
 export interface InspectionItem {
@@ -42,6 +45,7 @@ export interface InspectionItem {
   itemNumber: number;
   code: string;
   description: string;
+  verificationInstruction?: string;
   order: number;
   required: boolean;
   photoRequired: boolean;
@@ -50,4 +54,23 @@ export interface InspectionItem {
   recommendation: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+}
+
+export interface InspectionPhoto {
+  id: string;
+  itemId: string | null;
+  category: 'item' | 'general';
+  storagePath: string;
+  downloadUrl: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  width: number;
+  height: number;
+  caption: string;
+  order: number;
+  uploadStatus: 'completed';
+  createdBy: string;
+  createdByName: string;
+  createdAt: Timestamp;
 }
