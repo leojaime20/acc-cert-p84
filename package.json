@@ -11,7 +11,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:rules": "npx --yes firebase-tools@15.24.0 emulators:exec --only firestore,storage \"tsx tests/storage.rules.ts\"",
+    "test:rules": "npx --yes firebase-tools@15.24.0 emulators:exec --project acc-cert-photo-rules-test --only firestore,storage \"tsx tests/storage.rules.ts\"",
     "firebase:emulators": "firebase emulators:start",
     "firebase:deploy": "firebase deploy",
     "seed:p84": "tsx scripts/seed-p84.ts",
