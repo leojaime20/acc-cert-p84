@@ -38,6 +38,8 @@ export function InspectionPage() {
   const [photos, setPhotos] = useState<InspectionPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [photoError, setPhotoError] = useState('');
+  const [reportError, setReportError] = useState('');
   const [finalizing, setFinalizing] = useState(false);
   const [pending, setPending] = useState<string[]>([]);
   const [reportUrl, setReportUrl] = useState('');
@@ -47,27 +49,64 @@ export function InspectionPage() {
     const nextInspection = await getInspection(inspectionId);
     setInspection(nextInspection);
     if (nextInspection.reportStoragePath) {
-      setReportUrl(await getStorageDownloadUrl(nextInspection.reportStoragePath));
+      try {
+        setReportUrl(await getStorageDownloadUrl(nextInspection.reportStoragePath));
+        setReportError('');
+      } catch {
+        setReportError('O relatório foi gerado, mas não pôde ser aberto agora.');
+      }
     }
   }, [inspectionId]);
 
   useEffect(() => {
     if (!inspectionId) return;
-    void Promise.all([
-      getInspection(inspectionId),
-      listInspectionItems(inspectionId),
-      listInspectionPhotos(inspectionId),
-    ])
-      .then(([nextInspection, nextItems, nextPhotos]) => {
+    let active = true;
+
+    void getInspection(inspectionId)
+      .then((nextInspection) => {
+        if (!active) return;
         setInspection(nextInspection);
-        setItems(nextItems);
-        setPhotos(nextPhotos);
         if (nextInspection.reportStoragePath) {
-          void getStorageDownloadUrl(nextInspection.reportStoragePath).then(setReportUrl);
+          void getStorageDownloadUrl(nextInspection.reportStoragePath)
+            .then((url) => {
+              if (active) setReportUrl(url);
+            })
+            .catch(() => {
+              if (active) setReportError('O relatório foi gerado, mas não pôde ser aberto agora.');
+            });
         }
       })
-      .catch(() => setError('Não foi possível carregar esta inspeção.'))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (active) setError('Não foi possível carregar esta inspeção.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    void listInspectionItems(inspectionId)
+      .then((nextItems) => {
+        if (active) setItems(nextItems);
+      })
+      .catch(() => {
+        if (active) setError('A inspeção foi carregada, mas os itens não estão disponíveis agora.');
+      });
+
+    void listInspectionPhotos(inspectionId)
+      .then((nextPhotos) => {
+        if (!active) return;
+        setPhotos(nextPhotos);
+        setPhotoError('');
+      })
+      .catch(() => {
+        if (active)
+          setPhotoError(
+            'As fotografias não puderam ser carregadas. Os demais dados continuam disponíveis.',
+          );
+      });
+
+    return () => {
+      active = false;
+    };
   }, [inspectionId]);
 
   useEffect(() => {
@@ -172,6 +211,7 @@ export function InspectionPage() {
               <p className="eyebrow">Visão geral da área</p>
               <h2>Fotografias gerais</h2>
             </div>
+            {photoError && <div className="notice notice-warning">{photoError}</div>}
             <PhotoUploader
               inspectionId={inspection.id}
               itemId={null}
@@ -245,6 +285,7 @@ export function InspectionPage() {
                 {inspection.reportError && (
                   <small className="field-error">{inspection.reportError}</small>
                 )}
+                {reportError && <small className="field-error">{reportError}</small>}
               </div>
               {reportUrl && (
                 <a

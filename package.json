@@ -11,6 +11,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:rules": "npx --yes firebase-tools@15.24.0 emulators:exec --project acc-cert-photo-rules-test --only firestore,storage \"tsx tests/storage.rules.ts\"",
     "firebase:emulators": "firebase emulators:start",
     "firebase:deploy": "firebase deploy",
     "seed:p84": "tsx scripts/seed-p84.ts",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
+    "@firebase/rules-unit-testing": "^5.0.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^24.10.0",

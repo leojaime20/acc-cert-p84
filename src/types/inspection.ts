@@ -61,7 +61,7 @@ export interface InspectionPhoto {
   itemId: string | null;
   category: 'item' | 'general';
   storagePath: string;
-  downloadUrl: string;
+  downloadUrl?: string;
   originalName: string;
   mimeType: string;
   size: number;
@@ -69,8 +69,21 @@ export interface InspectionPhoto {
   height: number;
   caption: string;
   order: number;
-  uploadStatus: 'completed';
+  uploadStatus: 'pending' | 'completed' | 'failed';
+  errorStage?: PhotoUploadStage;
+  errorCode?: string;
+  errorMessage?: string;
+  loadError?: string;
   createdBy: string;
   createdByName: string;
   createdAt: Timestamp;
 }
+
+export type PhotoUploadStage =
+  | 'validation'
+  | 'compression'
+  | 'dimensions'
+  | 'firestore-pending'
+  | 'storage-upload'
+  | 'download-url'
+  | 'firestore-complete';

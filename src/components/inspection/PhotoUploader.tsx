@@ -1,5 +1,10 @@
 import { useEffect, useId, useState } from 'react';
-import { removeInspectionPhoto, uploadInspectionPhoto } from '../../services/photoService';
+import {
+  discardInspectionPhotoAttempt,
+  PhotoUploadError,
+  removeInspectionPhoto,
+  uploadInspectionPhoto,
+} from '../../services/photoService';
 import type { InspectionPhoto } from '../../types/inspection';
 import type { UserProfile } from '../../types/user';
 
@@ -29,6 +34,8 @@ export function PhotoUploader({
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [retryPhotoId, setRetryPhotoId] = useState<string>();
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(() => new Set());
 
   useEffect(
     () => () => {
@@ -40,6 +47,28 @@ export function PhotoUploader({
   function selectFile(nextFile: File | null) {
     setFile(nextFile);
     setPreview(nextFile ? URL.createObjectURL(nextFile) : '');
+    setRetryPhotoId(undefined);
+    setProgress(0);
+    setError('');
+  }
+
+  function uploadErrorMessage(uploadError: unknown) {
+    if (!(uploadError instanceof PhotoUploadError)) {
+      return 'Falha inesperada ao enviar a fotografia. Tente novamente.';
+    }
+    if (uploadError.stage === 'validation' || uploadError.stage === 'compression') {
+      return uploadError.message;
+    }
+    if (uploadError.stage === 'dimensions') {
+      return 'O navegador não conseguiu preparar esta imagem. Tente outra fotografia ou converta-a para JPEG.';
+    }
+    if (uploadError.stage === 'storage-upload') {
+      return `A fotografia foi preparada, mas o envio falhou. Verifique a conexão e tente novamente. (${uploadError.code})`;
+    }
+    if (uploadError.stage === 'download-url') {
+      return `A fotografia foi enviada, mas não pôde ser aberta. Tente novamente. (${uploadError.code})`;
+    }
+    return `Não foi possível registrar a fotografia. Tente novamente. (${uploadError.code})`;
   }
 
   async function upload() {
@@ -54,13 +83,17 @@ export function PhotoUploader({
         caption,
         user,
         setProgress,
+        retryPhotoId,
       );
       onAdded(photo);
       selectFile(null);
       setCaption('');
       setProgress(0);
-    } catch {
-      setError('Falha ao enviar a fotografia. Tente novamente.');
+      setRetryPhotoId(undefined);
+    } catch (uploadError) {
+      console.error('Falha no upload de fotografia', uploadError);
+      if (uploadError instanceof PhotoUploadError) setRetryPhotoId(uploadError.photoId);
+      setError(uploadErrorMessage(uploadError));
     } finally {
       setUploading(false);
     }
@@ -76,13 +109,47 @@ export function PhotoUploader({
     }
   }
 
+  async function cancelSelection() {
+    if (retryPhotoId) {
+      try {
+        await discardInspectionPhotoAttempt(inspectionId, itemId, retryPhotoId);
+      } catch (discardError) {
+        console.error('Falha ao descartar tentativa de upload', discardError);
+        setError('Não foi possível descartar o envio incompleto. Tente novamente.');
+        return;
+      }
+    }
+    selectFile(null);
+  }
+
   return (
     <div className="photo-section">
       {photos.length > 0 && (
         <div className="photo-grid">
           {photos.map((photo) => (
             <figure className="photo-card" key={photo.id}>
-              <img src={photo.downloadUrl} alt={photo.caption || 'Evidência da inspeção'} />
+              {photo.downloadUrl && !brokenImages.has(photo.id) ? (
+                <img
+                  src={photo.downloadUrl}
+                  alt={photo.caption || 'Evidência da inspeção'}
+                  onError={() => setBrokenImages((current) => new Set(current).add(photo.id))}
+                />
+              ) : (
+                <div className="photo-unavailable" role="status">
+                  <strong>
+                    {photo.uploadStatus === 'failed'
+                      ? 'Envio incompleto'
+                      : photo.uploadStatus === 'pending'
+                        ? 'Envio pendente'
+                        : 'Imagem indisponível'}
+                  </strong>
+                  <small>
+                    {photo.errorStage
+                      ? `Etapa: ${photo.errorStage}${photo.errorCode ? ` · ${photo.errorCode}` : ''}`
+                      : 'A inspeção continua disponível.'}
+                  </small>
+                </div>
+              )}
               {(photo.caption || editable) && (
                 <figcaption>
                   <span>{photo.caption || 'Sem legenda'}</span>
@@ -108,7 +175,7 @@ export function PhotoUploader({
             className="visually-hidden"
             id={inputId}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
             capture="environment"
             onChange={(event) => selectFile(event.target.files?.[0] || null)}
           />
@@ -140,7 +207,7 @@ export function PhotoUploader({
               type="button"
               className="button button-secondary"
               disabled={uploading}
-              onClick={() => selectFile(null)}
+              onClick={() => void cancelSelection()}
             >
               Cancelar
             </button>
@@ -150,7 +217,7 @@ export function PhotoUploader({
               disabled={uploading}
               onClick={() => void upload()}
             >
-              {uploading ? 'Enviando…' : 'Usar fotografia'}
+              {uploading ? 'Enviando…' : retryPhotoId ? 'Tentar novamente' : 'Usar fotografia'}
             </button>
           </div>
         </div>

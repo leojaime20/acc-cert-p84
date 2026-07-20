@@ -664,6 +664,21 @@ label {
   aspect-ratio: 4 / 3;
   object-fit: cover;
 }
+
+.photo-unavailable {
+  display: grid;
+  min-height: 180px;
+  place-content: center;
+  gap: 0.35rem;
+  padding: 1rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  background: #f1f5f3;
+}
+
+.photo-unavailable strong {
+  color: var(--color-text);
+}
 .photo-card figcaption {
   display: grid;
   gap: 0.35rem;
