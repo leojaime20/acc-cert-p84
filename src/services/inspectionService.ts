@@ -5,13 +5,21 @@ import {
   getDocs,
   orderBy,
   query,
+  runTransaction,
   serverTimestamp,
   where,
   writeBatch,
 } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { db } from '../lib/firebase/firestore';
+import { functions } from '../lib/firebase/functions';
 import type { ChecklistTemplate, ChecklistTemplateItem } from '../types/checklist';
-import type { Inspection, InspectionItem } from '../types/inspection';
+import type {
+  ChecklistItemStatus,
+  Inspection,
+  InspectionItem,
+  InspectionSummary,
+} from '../types/inspection';
 import type { Area } from '../types/project';
 import type { UserProfile } from '../types/user';
 
@@ -83,6 +91,7 @@ export async function createInspection(area: Area, inspector: UserProfile) {
       itemNumber: item.itemNumber,
       code: `${template.code}-${String(item.itemNumber).padStart(2, '0')}`,
       description: item.description,
+      verificationInstruction: item.verificationInstruction || item.description,
       order: item.order,
       required: item.required,
       photoRequired: item.photoRequired,
@@ -126,4 +135,51 @@ export async function listInspections(projectIds: string[], isAdmin: boolean) {
       snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as Inspection),
     )
     .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+}
+
+const summaryKeys: Record<ChecklistItemStatus, keyof InspectionSummary> = {
+  not_started: 'notStarted',
+  approved: 'approved',
+  partially_approved: 'partiallyApproved',
+  rejected: 'rejected',
+  not_applicable: 'notApplicable',
+};
+
+export async function updateInspectionItem(
+  inspectionId: string,
+  itemId: string,
+  changes: Pick<InspectionItem, 'status' | 'comment' | 'recommendation'>,
+) {
+  const firestore = requireDb();
+  const inspectionRef = doc(firestore, 'inspections', inspectionId);
+  const itemRef = doc(inspectionRef, 'items', itemId);
+
+  return runTransaction(firestore, async (transaction) => {
+    const inspectionSnapshot = await transaction.get(inspectionRef);
+    const itemSnapshot = await transaction.get(itemRef);
+    if (!inspectionSnapshot.exists() || !itemSnapshot.exists()) {
+      throw new Error('Inspeção ou item não encontrado.');
+    }
+
+    const inspection = inspectionSnapshot.data() as Inspection;
+    const previousItem = itemSnapshot.data() as InspectionItem;
+    const summary = { ...inspection.summary };
+    if (previousItem.status !== changes.status) {
+      summary[summaryKeys[previousItem.status]] -= 1;
+      summary[summaryKeys[changes.status]] += 1;
+    }
+
+    transaction.update(itemRef, { ...changes, updatedAt: serverTimestamp() });
+    transaction.update(inspectionRef, { summary, updatedAt: serverTimestamp() });
+    return summary;
+  });
+}
+
+export async function finalizeInspection(inspectionId: string) {
+  if (!functions) throw new Error('Firebase não configurado.');
+  const finalize = httpsCallable<{ inspectionId: string }, { status: 'completed' }>(
+    functions,
+    'finalizeInspection',
+  );
+  return (await finalize({ inspectionId })).data;
 }
