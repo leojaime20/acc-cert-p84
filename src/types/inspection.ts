@@ -18,10 +18,15 @@ export interface Inspection {
   code: string;
   projectId: string;
   areaId: string;
+  areaCode: string;
+  areaName: string;
+  areaLocation: string;
   checklistTemplateId: string;
+  checklistTemplateCode: string;
   checklistTemplateVersion: number;
   inspectorId: string;
   inspectorName: string;
+  inspectorEmail: string;
   status: InspectionStatus;
   inspectionDate: Timestamp;
   summary: InspectionSummary;
@@ -29,4 +34,20 @@ export interface Inspection {
   updatedAt: Timestamp;
   completedAt?: Timestamp;
   completedBy?: string;
+}
+
+export interface InspectionItem {
+  id: string;
+  templateItemId: string;
+  itemNumber: number;
+  code: string;
+  description: string;
+  order: number;
+  required: boolean;
+  photoRequired: boolean;
+  status: ChecklistItemStatus;
+  comment: string;
+  recommendation: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }

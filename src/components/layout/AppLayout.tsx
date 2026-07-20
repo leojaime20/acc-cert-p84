@@ -25,7 +25,7 @@ export function AppLayout() {
       </main>
       <nav className="bottom-nav" aria-label="Navegação principal">
         <NavLink to="/projects">Obras</NavLink>
-        <NavLink to="/history">Histórico</NavLink>
+        <NavLink to="/history">Inspeções</NavLink>
       </nav>
     </div>
   );
