@@ -1,4 +1,13 @@
-import { collection, documentId, getDocs, orderBy, query, where } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  documentId,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  where,
+} from 'firebase/firestore';
 import { db } from '../lib/firebase/firestore';
 import type { Area, Project } from '../types/project';
 
@@ -24,4 +33,10 @@ export async function listAreas(projectId: string) {
   const areasRef = collection(requireDb(), 'projects', projectId, 'areas');
   const snapshot = await getDocs(query(areasRef, where('active', '==', true), orderBy('order')));
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as Area);
+}
+
+export async function getArea(projectId: string, areaId: string) {
+  const snapshot = await getDoc(doc(requireDb(), 'projects', projectId, 'areas', areaId));
+  if (!snapshot.exists()) throw new Error('Área não encontrada.');
+  return { id: snapshot.id, ...snapshot.data() } as Area;
 }

@@ -61,7 +61,9 @@ service cloud.firestore {
         && hasProject(request.resource.data.projectId)
         && validInspectionStatus(request.resource.data.status)
         && request.resource.data.status == 'draft'
-        && request.resource.data.inspectorId == request.auth.uid;
+        && request.resource.data.inspectorId == request.auth.uid
+        && request.resource.data.inspectorName == profile().name
+        && request.resource.data.inspectorEmail == profile().email;
       allow update: if isAdmin() || (
         activeUser()
         && hasProject(resource.data.projectId)
@@ -71,6 +73,8 @@ service cloud.firestore {
         && request.resource.data.projectId == resource.data.projectId
         && request.resource.data.areaId == resource.data.areaId
         && request.resource.data.inspectorId == resource.data.inspectorId
+        && request.resource.data.inspectorName == resource.data.inspectorName
+        && request.resource.data.inspectorEmail == resource.data.inspectorEmail
         && request.resource.data.checklistTemplateId == resource.data.checklistTemplateId
         && request.resource.data.checklistTemplateVersion == resource.data.checklistTemplateVersion
       );
@@ -80,11 +84,14 @@ service cloud.firestore {
         function inspection() {
           return get(/databases/$(database)/documents/inspections/$(inspectionId)).data;
         }
+        function inspectionAfterWrite() {
+          return getAfter(/databases/$(database)/documents/inspections/$(inspectionId)).data;
+        }
         allow read: if hasProject(inspection().projectId);
         allow create, update: if activeUser()
-          && hasProject(inspection().projectId)
-          && inspection().inspectorId == request.auth.uid
-          && inspection().status in ['draft', 'reopened'];
+          && hasProject(inspectionAfterWrite().projectId)
+          && inspectionAfterWrite().inspectorId == request.auth.uid
+          && inspectionAfterWrite().status in ['draft', 'reopened'];
         allow delete: if false;
       }
 
