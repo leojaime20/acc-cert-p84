@@ -1,0 +1,117 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function activeUser() {
+      return signedIn() && profile().active == true;
+    }
+
+    function isAdmin() {
+      return activeUser() && profile().role == 'admin';
+    }
+
+    function hasProject(projectId) {
+      return isAdmin() || (activeUser() && projectId in profile().projectIds);
+    }
+
+    function validInspectionStatus(status) {
+      return status in ['draft', 'completed', 'reopened', 'cancelled'];
+    }
+
+    match /users/{userId} {
+      allow read: if activeUser() && (request.auth.uid == userId || isAdmin());
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /projects/{projectId} {
+      allow read: if hasProject(projectId);
+      allow create, update, delete: if isAdmin();
+
+      match /areas/{areaId} {
+        allow read: if hasProject(projectId);
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
+    match /checklistTemplates/{templateId} {
+      allow read: if hasProject(resource.data.projectId);
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin() && request.resource.data.projectId == resource.data.projectId;
+
+      match /items/{itemId} {
+        function template() {
+          return get(/databases/$(database)/documents/checklistTemplates/$(templateId)).data;
+        }
+        allow read: if hasProject(template().projectId);
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
+    match /inspections/{inspectionId} {
+      allow read: if hasProject(resource.data.projectId);
+      allow create: if activeUser()
+        && hasProject(request.resource.data.projectId)
+        && validInspectionStatus(request.resource.data.status)
+        && request.resource.data.status == 'draft'
+        && request.resource.data.inspectorId == request.auth.uid;
+      allow update: if isAdmin() || (
+        activeUser()
+        && hasProject(resource.data.projectId)
+        && resource.data.inspectorId == request.auth.uid
+        && resource.data.status in ['draft', 'reopened']
+        && request.resource.data.status == resource.data.status
+        && request.resource.data.projectId == resource.data.projectId
+        && request.resource.data.areaId == resource.data.areaId
+        && request.resource.data.inspectorId == resource.data.inspectorId
+        && request.resource.data.checklistTemplateId == resource.data.checklistTemplateId
+        && request.resource.data.checklistTemplateVersion == resource.data.checklistTemplateVersion
+      );
+      allow delete: if false;
+
+      match /items/{itemId} {
+        function inspection() {
+          return get(/databases/$(database)/documents/inspections/$(inspectionId)).data;
+        }
+        allow read: if hasProject(inspection().projectId);
+        allow create, update: if activeUser()
+          && hasProject(inspection().projectId)
+          && inspection().inspectorId == request.auth.uid
+          && inspection().status in ['draft', 'reopened'];
+        allow delete: if false;
+      }
+
+      match /photos/{photoId} {
+        function inspection() {
+          return get(/databases/$(database)/documents/inspections/$(inspectionId)).data;
+        }
+        allow read: if hasProject(inspection().projectId);
+        allow create, update, delete: if activeUser()
+          && hasProject(inspection().projectId)
+          && inspection().inspectorId == request.auth.uid
+          && inspection().status in ['draft', 'reopened'];
+      }
+    }
+
+    match /technicalDocuments/{documentId} {
+      allow read: if hasProject(resource.data.projectId);
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,6 @@
+dist
+coverage
+.firebase
+functions/lib
+package-lock.json
+

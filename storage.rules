@@ -1,0 +1,76 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profile() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function activeUser() {
+      return signedIn() && profile().active == true;
+    }
+
+    function isAdmin() {
+      return activeUser() && profile().role == 'admin';
+    }
+
+    function inspection(inspectionId) {
+      return firestore.get(/databases/(default)/documents/inspections/$(inspectionId)).data;
+    }
+
+    function hasProject(projectId) {
+      return isAdmin() || (activeUser() && projectId in profile().projectIds);
+    }
+
+    function canEditInspection(inspectionId) {
+      return activeUser()
+        && hasProject(inspection(inspectionId).projectId)
+        && inspection(inspectionId).inspectorId == request.auth.uid
+        && inspection(inspectionId).status in ['draft', 'reopened'];
+    }
+
+    function validImage() {
+      return request.resource.size <= 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    match /inspections/{inspectionId}/general/{photoId} {
+      allow read: if hasProject(inspection(inspectionId).projectId);
+      allow create, update: if canEditInspection(inspectionId) && validImage();
+      allow delete: if canEditInspection(inspectionId);
+    }
+
+    match /inspections/{inspectionId}/items/{itemId}/{photoId} {
+      allow read: if hasProject(inspection(inspectionId).projectId);
+      allow create, update: if canEditInspection(inspectionId) && validImage();
+      allow delete: if canEditInspection(inspectionId);
+    }
+
+    match /inspections/{inspectionId}/thumbnails/{photoId} {
+      allow read: if hasProject(inspection(inspectionId).projectId);
+      allow create, update: if canEditInspection(inspectionId) && validImage();
+      allow delete: if canEditInspection(inspectionId);
+    }
+
+    match /inspections/{inspectionId}/reports/{reportName} {
+      allow read: if hasProject(inspection(inspectionId).projectId);
+      allow write: if false;
+    }
+
+    match /projects/{projectId}/areas/{areaId}/documents/{documentId}/{fileName} {
+      allow read: if hasProject(projectId);
+      allow create, update: if isAdmin()
+        && request.resource.size <= 50 * 1024 * 1024
+        && request.resource.contentType == 'application/pdf';
+      allow delete: if isAdmin();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
