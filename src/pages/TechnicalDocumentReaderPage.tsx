@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { PdfViewer } from '../components/documents/PdfViewer';
 import { getInspection } from '../services/inspectionService';
 import {
   getTechnicalDocument,
+  getTechnicalDocumentBytes,
   getTechnicalDocumentUrl,
 } from '../services/technicalDocumentService';
 import type { Inspection } from '../types/inspection';
@@ -19,6 +20,11 @@ export function TechnicalDocumentReaderPage() {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const loadDocumentBytes = useCallback(() => {
+    if (!document) return Promise.reject(new Error('Documento não carregado.'));
+    return getTechnicalDocumentBytes(document);
+  }, [document]);
 
   useEffect(() => {
     if (!inspectionId || !documentId) return;
@@ -80,7 +86,12 @@ export function TechnicalDocumentReaderPage() {
         </div>
       )}
       {url && document && (
-        <PdfViewer url={url} title={document.title} allowDownload={document.allowDownload} />
+        <PdfViewer
+          url={url}
+          title={document.title}
+          allowDownload={document.allowDownload}
+          loadBytes={loadDocumentBytes}
+        />
       )}
     </section>
   );

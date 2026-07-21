@@ -1,14 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist';
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 
 interface PdfViewerProps {
   url: string;
   title: string;
   allowDownload: boolean;
+  loadBytes?: () => Promise<ArrayBuffer>;
 }
 
-export function PdfViewer({ url, title, allowDownload }: PdfViewerProps) {
+function readerErrorMessage(error: unknown) {
+  const name = error instanceof Error ? error.name : '';
+  if (name === 'PasswordException') {
+    return 'Este PDF é protegido por senha. Abra-o no leitor do dispositivo.';
+  }
+  if (name === 'InvalidPDFException') {
+    return 'O arquivo PDF parece estar inválido ou corrompido.';
+  }
+  if (name === 'MissingPDFException' || name === 'UnexpectedResponseException') {
+    return 'O arquivo não pôde ser baixado do armazenamento.';
+  }
+  return 'O leitor não conseguiu carregar este PDF.';
+}
+
+export function PdfViewer({ url, title, allowDownload, loadBytes }: PdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const renderTaskRef = useRef<RenderTask | undefined>(undefined);
@@ -34,14 +49,22 @@ export function PdfViewer({ url, title, allowDownload }: PdfViewerProps) {
     let active = true;
     let loadedPdf: PDFDocumentProxy | undefined;
 
-    void import('pdfjs-dist')
+    void import('pdfjs-dist/legacy/build/pdf.mjs')
       .then(async (pdfjs) => {
         pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-        loadedPdf = await pdfjs.getDocument({ url }).promise;
+        try {
+          loadedPdf = await pdfjs.getDocument({ url }).promise;
+        } catch (urlError) {
+          if (!loadBytes) throw urlError;
+          const bytes = await loadBytes();
+          loadedPdf = await pdfjs.getDocument({
+            data: new Uint8Array(bytes),
+          }).promise;
+        }
         if (active) setPdf(loadedPdf);
       })
-      .catch(() => {
-        if (active) setError('O leitor não conseguiu carregar este PDF.');
+      .catch((loadError: unknown) => {
+        if (active) setError(readerErrorMessage(loadError));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -52,7 +75,7 @@ export function PdfViewer({ url, title, allowDownload }: PdfViewerProps) {
       renderTaskRef.current?.cancel();
       void loadedPdf?.destroy();
     };
-  }, [url]);
+  }, [loadBytes, url]);
 
   useEffect(() => {
     if (!pdf || !canvasRef.current || !containerWidth) return;

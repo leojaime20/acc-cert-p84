@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import {
   deleteObject,
+  getBytes,
   getDownloadURL,
   ref,
   uploadBytesResumable,
@@ -129,6 +130,11 @@ export async function getTechnicalDocument(documentId: string) {
 export async function getTechnicalDocumentUrl(document: TechnicalDocument) {
   const firebase = requireFirebase();
   return getDownloadURL(ref(firebase.storage, document.storagePath));
+}
+
+export async function getTechnicalDocumentBytes(document: TechnicalDocument) {
+  const firebase = requireFirebase();
+  return getBytes(ref(firebase.storage, document.storagePath), MAX_TECHNICAL_DOCUMENT_SIZE);
 }
 
 export async function listTechnicalDocumentVersions(documentId: string) {
