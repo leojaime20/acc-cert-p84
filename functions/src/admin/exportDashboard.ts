@@ -1,4 +1,4 @@
-import createArchive from 'archiver';
+import { ZipArchive } from 'archiver';
 import { randomUUID } from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
@@ -252,7 +252,7 @@ export const exportDashboardPackage = onCall(
         metadata: { exportId, generatedBy: administrator.uid },
       },
     });
-    const archive = createArchive('zip', { zlib: { level: 7 } });
+    const archive = new ZipArchive({ zlib: { level: 7 } });
     const completed = new Promise<void>((resolve, reject) => {
       output.on('finish', resolve);
       output.on('error', reject);
