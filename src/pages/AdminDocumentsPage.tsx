@@ -36,7 +36,7 @@ const emptyForm: DocumentFormState = {
   projectId: 'p84',
   title: '',
   description: '',
-  category: 'drawing',
+  category: 'layout',
   version: '1',
   issueDate: '',
   areaIds: [],

@@ -1,26 +1,20 @@
 import type { Timestamp } from 'firebase/firestore';
 
 export const technicalDocumentCategories = [
-  'drawing',
-  'procedure',
-  'specification',
-  'memorial',
-  'manual',
-  'standard',
-  'other',
+  'layout',
+  'safety_signs',
+  'scape_route',
+  'trolley_beam_pad_eyes_detail',
 ] as const;
 
 export type TechnicalDocumentCategory = (typeof technicalDocumentCategories)[number];
 export type TechnicalDocumentStatus = 'uploading' | 'ready' | 'failed' | 'archived';
 
 export const technicalDocumentCategoryLabels: Record<TechnicalDocumentCategory, string> = {
-  drawing: 'Desenho',
-  procedure: 'Procedimento',
-  specification: 'Especificação',
-  memorial: 'Memorial',
-  manual: 'Manual',
-  standard: 'Norma',
-  other: 'Outro',
+  layout: 'Layout',
+  safety_signs: 'Safety signs',
+  scape_route: 'Scape route',
+  trolley_beam_pad_eyes_detail: 'Trolley beam Pad eyes detail',
 };
 
 export interface TechnicalDocument {
