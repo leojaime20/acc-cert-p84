@@ -14,3 +14,11 @@ export async function requireActiveUser(request: CallableRequest<unknown>) {
     projectIds: string[];
   };
 }
+
+export async function requireAdmin(request: CallableRequest<unknown>) {
+  const user = await requireActiveUser(request);
+  if (user.role !== 'admin') {
+    throw new HttpsError('permission-denied', 'Acesso exclusivo para administradores.');
+  }
+  return user;
+}

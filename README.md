@@ -68,6 +68,19 @@ npm --prefix functions run build
 firebase emulators:exec --only firestore,storage "npm test"
 ```
 
+## Administração e dados para dashboards
+
+Usuários com perfil `admin` possuem uma central exclusiva para:
+
+- cadastrar e ativar inspetores ou visualizadores por e-mail;
+- reenviar a mensagem de definição de senha e desativar acessos;
+- pesquisar e abrir todos os relatórios PDF gerados;
+- gerar um pacote ZIP consolidado para Excel e Power BI.
+
+O pacote contém `dados/inspecoes_itens.csv`, com uma linha por item de checklist,
+`dados/manifesto_imagens.csv`, as fotografias organizadas em
+`imagens/INSPECAO/ITEM/` e os PDFs disponíveis em `relatorios/`.
+
 ## Deploy
 
 O frontend é publicado pelo workflow `.github/workflows/deploy-pages.yml`. As variáveis `VITE_FIREBASE_*` devem ser cadastradas como _Actions Variables_ no repositório GitHub.

@@ -61,6 +61,11 @@ service firebase.storage {
       allow write: if false;
     }
 
+    match /adminExports/{userId}/{fileName} {
+      allow read: if isAdmin() && request.auth.uid == userId;
+      allow write: if false;
+    }
+
     match /projects/{projectId}/areas/{areaId}/documents/{documentId}/{fileName} {
       allow read: if hasProject(projectId);
       allow create, update: if isAdmin()
