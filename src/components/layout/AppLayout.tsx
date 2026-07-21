@@ -26,6 +26,7 @@ export function AppLayout() {
       <nav className="bottom-nav" aria-label="Navegação principal">
         <NavLink to="/projects">Obras</NavLink>
         <NavLink to="/history">Inspeções</NavLink>
+        {profile?.role === 'admin' && <NavLink to="/admin">Administração</NavLink>}
       </nav>
     </div>
   );

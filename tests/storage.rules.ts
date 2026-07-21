@@ -30,6 +30,11 @@ async function seedData(environment: RulesTestEnvironment) {
         role: 'inspector',
         projectIds: [],
       }),
+      setDoc(doc(firestore, 'users/admin'), {
+        active: true,
+        role: 'admin',
+        projectIds: ['p84'],
+      }),
       setDoc(doc(firestore, 'inspections/draft-inspection'), {
         projectId: 'p84',
         inspectorId: 'owner',
@@ -41,6 +46,11 @@ async function seedData(environment: RulesTestEnvironment) {
         status: 'completed',
       }),
     ]);
+    await uploadBytes(
+      ref(context.storage(), 'adminExports/admin/dashboard.zip'),
+      new Uint8Array([0x50, 0x4b]),
+      { contentType: 'application/zip' },
+    );
   });
 }
 
@@ -55,6 +65,7 @@ async function main() {
   const ownerStorage = testEnvironment.authenticatedContext('owner').storage();
   const memberStorage = testEnvironment.authenticatedContext('member').storage();
   const outsiderStorage = testEnvironment.authenticatedContext('outsider').storage();
+  const adminStorage = testEnvironment.authenticatedContext('admin').storage();
   const anonymousStorage = testEnvironment.unauthenticatedContext().storage();
   const image = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);
 
@@ -99,7 +110,17 @@ async function main() {
   );
   await assertSucceeds(deleteObject(generalPhoto));
 
-  console.log('Storage rules: 10 verificações aprovadas.');
+  const dashboardExportPath = 'adminExports/admin/dashboard.zip';
+  await assertSucceeds(getBytes(ref(adminStorage, dashboardExportPath)));
+  await assertFails(getBytes(ref(ownerStorage, dashboardExportPath)));
+  await assertFails(getBytes(ref(anonymousStorage, dashboardExportPath)));
+  await assertFails(
+    uploadBytes(ref(adminStorage, 'adminExports/admin/forbidden.zip'), image, {
+      contentType: 'application/zip',
+    }),
+  );
+
+  console.log('Storage rules: 14 verificações aprovadas.');
 }
 
 try {
