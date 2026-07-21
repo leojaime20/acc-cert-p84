@@ -27,7 +27,8 @@ export function PhotoUploader({
   onAdded,
   onRemoved,
 }: PhotoUploaderProps) {
-  const inputId = useId();
+  const cameraInputId = useId();
+  const deviceInputId = useId();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState('');
   const [caption, setCaption] = useState('');
@@ -170,19 +171,36 @@ export function PhotoUploader({
       )}
 
       {editable && !file && (
-        <>
+        <div className="photo-source-actions">
           <input
             className="visually-hidden"
-            id={inputId}
+            id={cameraInputId}
             type="file"
             accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
             capture="environment"
+            onClick={(event) => {
+              event.currentTarget.value = '';
+            }}
             onChange={(event) => selectFile(event.target.files?.[0] || null)}
           />
-          <label className="camera-button" htmlFor={inputId}>
-            <span aria-hidden="true">＋</span> Tirar ou adicionar foto
+          <label className="camera-button" htmlFor={cameraInputId}>
+            <span aria-hidden="true">◉</span> Tirar foto
           </label>
-        </>
+
+          <input
+            className="visually-hidden"
+            id={deviceInputId}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+            onClick={(event) => {
+              event.currentTarget.value = '';
+            }}
+            onChange={(event) => selectFile(event.target.files?.[0] || null)}
+          />
+          <label className="camera-button device-photo-button" htmlFor={deviceInputId}>
+            <span aria-hidden="true">▧</span> Escolher do dispositivo
+          </label>
+        </div>
       )}
 
       {file && (
