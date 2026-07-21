@@ -27,7 +27,7 @@ export interface DashboardExportResult {
 }
 
 function requireAdminServices() {
-  if (!db || !functions) throw new Error('Firebase não configurado.');
+  if (!db || !functions) throw new Error('Firebase is not configured.');
   return { db, functions };
 }
 
@@ -36,7 +36,7 @@ export async function listUsers() {
   const snapshot = await getDocs(collection(firebase.db, 'users'));
   return snapshot.docs
     .map((user) => ({ uid: user.id, ...user.data() }) as UserProfile)
-    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    .sort((a, b) => a.name.localeCompare(b.name, 'en'));
 }
 
 export async function manageUserAccess(input: ManageUserAccessInput) {
@@ -49,7 +49,7 @@ export async function manageUserAccess(input: ManageUserAccessInput) {
 }
 
 export async function sendAccessEmail(email: string) {
-  if (!auth) throw new Error('Firebase não configurado.');
+  if (!auth) throw new Error('Firebase is not configured.');
   await sendPasswordResetEmail(auth, email.trim().toLowerCase());
 }
 
@@ -61,4 +61,13 @@ export async function generateDashboardExport() {
   );
   const result = (await callable({})).data;
   return { ...result, downloadUrl: await getStorageDownloadUrl(result.storagePath) };
+}
+
+export async function deleteInspection(inspectionId: string) {
+  const firebase = requireAdminServices();
+  const callable = httpsCallable<{ inspectionId: string }, { inspectionId: string }>(
+    firebase.functions,
+    'deleteInspection',
+  );
+  return (await callable({ inspectionId })).data;
 }

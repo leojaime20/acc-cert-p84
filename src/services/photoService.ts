@@ -43,7 +43,7 @@ export class PhotoUploadError extends Error {
 }
 
 function requireFirebase() {
-  if (!db || !storage) throw new Error('Firebase não configurado.');
+  if (!db || !storage) throw new Error('Firebase is not configured.');
   return { db, storage };
 }
 
@@ -55,7 +55,7 @@ function errorCode(error: unknown) {
 }
 
 function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : 'Erro desconhecido.';
+  return error instanceof Error ? error.message : 'Unknown error.';
 }
 
 export function validatePhotoFile(file: File) {
@@ -63,19 +63,19 @@ export function validatePhotoFile(file: File) {
     const isHeic = ['image/heic', 'image/heif'].includes(file.type.toLowerCase());
     throw new PhotoUploadError(
       isHeic
-        ? 'O formato HEIC/HEIF ainda não é compatível. No iPhone, escolha “Mais compatível” nas configurações da câmera ou envie JPEG, PNG ou WebP.'
-        : 'Formato não compatível. Envie uma imagem JPEG, PNG ou WebP.',
+        ? 'HEIC/HEIF is not supported yet. On iPhone, choose “Most Compatible” in camera settings or upload JPEG, PNG or WebP.'
+        : 'Unsupported format. Upload a JPEG, PNG or WebP image.',
       { stage: 'validation', code: 'unsupported-image-type' },
     );
   }
   if (file.size <= 0) {
-    throw new PhotoUploadError('A fotografia selecionada está vazia.', {
+    throw new PhotoUploadError('The selected photo is empty.', {
       stage: 'validation',
       code: 'empty-file',
     });
   }
   if (file.size > MAX_SOURCE_SIZE) {
-    throw new PhotoUploadError('A fotografia original deve ter no máximo 25 MB.', {
+    throw new PhotoUploadError('The original photo must be no larger than 25 MB.', {
       stage: 'validation',
       code: 'source-too-large',
     });
@@ -93,7 +93,7 @@ async function dimensionsWithImageElement(file: Blob) {
     };
     image.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      reject(new Error('O navegador não conseguiu ler as dimensões da imagem.'));
+      reject(new Error('The browser could not read the image dimensions.'));
     };
     image.src = objectUrl;
   });
@@ -107,7 +107,7 @@ export async function readImageDimensions(file: Blob) {
       bitmap.close();
       return dimensions;
     } catch {
-      // Safari/iOS pode expor createImageBitmap sem aceitar todos os formatos decodificáveis.
+    // Safari/iOS may expose createImageBitmap without accepting all decodable formats.
     }
   }
   return dimensionsWithImageElement(file);
@@ -118,14 +118,14 @@ async function compressPhoto(sourceFile: File) {
   const compressed = await imageCompression(sourceFile, {
     maxSizeMB: 1.7,
     maxWidthOrHeight: 1920,
-    // Evita depender de um worker carregado por CDN, que pode ser bloqueado em campo.
+    // Avoids depending on a CDN-loaded worker, which can be blocked in the field.
     useWebWorker: false,
     fileType: 'image/jpeg',
     initialQuality: 0.9,
   });
 
   if (compressed.size <= 0 || compressed.size > MAX_UPLOAD_SIZE) {
-    throw new PhotoUploadError('Não foi possível reduzir a fotografia para o limite de 2 MB.', {
+    throw new PhotoUploadError('Unable to reduce the photo to the 2 MB limit.', {
       stage: 'compression',
       code: 'compressed-size-invalid',
     });

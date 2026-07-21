@@ -55,21 +55,21 @@ export function PhotoUploader({
 
   function uploadErrorMessage(uploadError: unknown) {
     if (!(uploadError instanceof PhotoUploadError)) {
-      return 'Falha inesperada ao enviar a fotografia. Tente novamente.';
+      return 'Unexpected error while uploading the photo. Try again.';
     }
     if (uploadError.stage === 'validation' || uploadError.stage === 'compression') {
       return uploadError.message;
     }
     if (uploadError.stage === 'dimensions') {
-      return 'O navegador não conseguiu preparar esta imagem. Tente outra fotografia ou converta-a para JPEG.';
+      return 'The browser could not prepare this image. Try another photo or convert it to JPEG.';
     }
     if (uploadError.stage === 'storage-upload') {
-      return `A fotografia foi preparada, mas o envio falhou. Verifique a conexão e tente novamente. (${uploadError.code})`;
+      return `The photo was prepared, but the upload failed. Check your connection and try again. (${uploadError.code})`;
     }
     if (uploadError.stage === 'download-url') {
-      return `A fotografia foi enviada, mas não pôde ser aberta. Tente novamente. (${uploadError.code})`;
+      return `The photo was uploaded, but could not be opened. Try again. (${uploadError.code})`;
     }
-    return `Não foi possível registrar a fotografia. Tente novamente. (${uploadError.code})`;
+    return `Unable to register the photo. Try again. (${uploadError.code})`;
   }
 
   async function upload() {
@@ -92,7 +92,7 @@ export function PhotoUploader({
       setProgress(0);
       setRetryPhotoId(undefined);
     } catch (uploadError) {
-      console.error('Falha no upload de fotografia', uploadError);
+      console.error('Photo upload failed', uploadError);
       if (uploadError instanceof PhotoUploadError) setRetryPhotoId(uploadError.photoId);
       setError(uploadErrorMessage(uploadError));
     } finally {
@@ -106,7 +106,7 @@ export function PhotoUploader({
       await removeInspectionPhoto(inspectionId, photo);
       onRemoved(photo.id);
     } catch {
-      setError('Não foi possível remover a fotografia.');
+      setError('Unable to remove the photo.');
     }
   }
 
@@ -115,8 +115,8 @@ export function PhotoUploader({
       try {
         await discardInspectionPhotoAttempt(inspectionId, itemId, retryPhotoId);
       } catch (discardError) {
-        console.error('Falha ao descartar tentativa de upload', discardError);
-        setError('Não foi possível descartar o envio incompleto. Tente novamente.');
+        console.error('Unable to discard the upload attempt', discardError);
+        setError('Unable to discard the incomplete upload. Try again.');
         return;
       }
     }
@@ -132,35 +132,35 @@ export function PhotoUploader({
               {photo.downloadUrl && !brokenImages.has(photo.id) ? (
                 <img
                   src={photo.downloadUrl}
-                  alt={photo.caption || 'Evidência da inspeção'}
+                  alt={photo.caption || 'Inspection evidence'}
                   onError={() => setBrokenImages((current) => new Set(current).add(photo.id))}
                 />
               ) : (
                 <div className="photo-unavailable" role="status">
                   <strong>
                     {photo.uploadStatus === 'failed'
-                      ? 'Envio incompleto'
+                      ? 'Incomplete upload'
                       : photo.uploadStatus === 'pending'
-                        ? 'Envio pendente'
-                        : 'Imagem indisponível'}
+                        ? 'Upload pending'
+                        : 'Image unavailable'}
                   </strong>
                   <small>
                     {photo.errorStage
-                      ? `Etapa: ${photo.errorStage}${photo.errorCode ? ` · ${photo.errorCode}` : ''}`
-                      : 'A inspeção continua disponível.'}
+                      ? `Stage: ${photo.errorStage}${photo.errorCode ? ` · ${photo.errorCode}` : ''}`
+                      : 'The inspection is still available.'}
                   </small>
                 </div>
               )}
               {(photo.caption || editable) && (
                 <figcaption>
-                  <span>{photo.caption || 'Sem legenda'}</span>
+                  <span>{photo.caption || 'No caption'}</span>
                   {editable && (
                     <button
                       type="button"
                       className="photo-remove"
                       onClick={() => void remove(photo)}
                     >
-                      Remover
+                      Remove
                     </button>
                   )}
                 </figcaption>
@@ -184,7 +184,7 @@ export function PhotoUploader({
             onChange={(event) => selectFile(event.target.files?.[0] || null)}
           />
           <label className="camera-button" htmlFor={cameraInputId}>
-            <span aria-hidden="true">◉</span> Tirar foto
+            <span aria-hidden="true">◉</span> Take photo
           </label>
 
           <input
@@ -198,26 +198,26 @@ export function PhotoUploader({
             onChange={(event) => selectFile(event.target.files?.[0] || null)}
           />
           <label className="camera-button device-photo-button" htmlFor={deviceInputId}>
-            <span aria-hidden="true">▧</span> Escolher do dispositivo
+            <span aria-hidden="true">▧</span> Choose from device
           </label>
         </div>
       )}
 
       {file && (
         <div className="photo-preview">
-          <img src={preview} alt="Pré-visualização da nova fotografia" />
+          <img src={preview} alt="New photo preview" />
           <label>
-            Legenda (opcional)
+            Caption (optional)
             <input
               value={caption}
               onChange={(event) => setCaption(event.target.value)}
-              placeholder="Descreva a evidência"
+              placeholder="Describe the evidence"
             />
           </label>
           {uploading && (
             <div className="upload-progress" aria-live="polite">
               <span style={{ width: `${progress}%` }} />
-              <small>Enviando: {progress}%</small>
+              <small>Uploading: {progress}%</small>
             </div>
           )}
           <div className="photo-actions">
@@ -227,7 +227,7 @@ export function PhotoUploader({
               disabled={uploading}
               onClick={() => void cancelSelection()}
             >
-              Cancelar
+              Cancel
             </button>
             <button
               type="button"
@@ -235,7 +235,7 @@ export function PhotoUploader({
               disabled={uploading}
               onClick={() => void upload()}
             >
-              {uploading ? 'Enviando…' : retryPhotoId ? 'Tentar novamente' : 'Usar fotografia'}
+              {uploading ? 'Uploading…' : retryPhotoId ? 'Try again' : 'Use photo'}
             </button>
           </div>
         </div>

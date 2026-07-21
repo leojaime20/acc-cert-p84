@@ -11,15 +11,15 @@ import {
 
 function sizeLabel(size: number) {
   return size >= 1024 * 1024
-    ? `${(size / (1024 * 1024)).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} MB`
+    ? `${(size / (1024 * 1024)).toLocaleString('en', { maximumFractionDigits: 1 })} MB`
     : `${Math.max(1, Math.round(size / 1024))} KB`;
 }
 
 function issueDateLabel(value?: string) {
-  if (!value) return 'Sem data de emissão';
+  if (!value) return 'No issue date';
   const [year, month, day] = value.split('-').map(Number);
   if (!year || !month || !day) return value;
-  return new Intl.DateTimeFormat('pt-BR').format(new Date(year, month - 1, day));
+  return new Intl.DateTimeFormat('en').format(new Date(year, month - 1, day));
 }
 
 export function InspectionDocumentsPage() {
@@ -45,7 +45,7 @@ export function InspectionDocumentsPage() {
         if (active) setDocuments(nextDocuments);
       })
       .catch(() => {
-        if (active) setError('Não foi possível carregar os documentos desta inspeção.');
+        if (active) setError('Unable to load documents for this inspection.');
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -56,12 +56,12 @@ export function InspectionDocumentsPage() {
   }, [inspectionId]);
 
   const filteredDocuments = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase('pt-BR');
+    const term = search.trim().toLocaleLowerCase('en');
     return documents.filter((document) => {
       if (category !== 'all' && document.category !== category) return false;
       if (!term) return true;
       return [document.title, document.description, document.fileName].some((value) =>
-        value?.toLocaleLowerCase('pt-BR').includes(term),
+        value?.toLocaleLowerCase('en').includes(term),
       );
     });
   }, [category, documents, search]);
@@ -69,11 +69,11 @@ export function InspectionDocumentsPage() {
   return (
     <section className="inspection-documents-page">
       <Link className="text-link back-link" to={`/inspections/${inspectionId}`}>
-        ← Voltar para a inspeção
+        ← Back to inspection
       </Link>
-      <p className="eyebrow">Suporte ao inspetor</p>
+      <p className="eyebrow">Inspector support</p>
       <div className="page-heading">
-        <h1>Documentos de referência</h1>
+        <h1>Reference documents</h1>
         <span className="count-pill">{documents.length}</span>
       </div>
       {inspection && (
@@ -85,18 +85,18 @@ export function InspectionDocumentsPage() {
 
       <div className="document-library-tools inspector-document-tools">
         <label>
-          Buscar documento
+          Search documents
           <input
             type="search"
-            placeholder="Título, descrição ou arquivo"
+            placeholder="Title, description or file"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
         </label>
         <label>
-          Categoria
+          Category
           <select value={category} onChange={(event) => setCategory(event.target.value)}>
-            <option value="all">Todas as categorias</option>
+            <option value="all">All categories</option>
             {technicalDocumentCategories.map((item) => (
               <option key={item} value={item}>
                 {technicalDocumentCategoryLabels[item]}
@@ -106,11 +106,11 @@ export function InspectionDocumentsPage() {
         </label>
       </div>
 
-      {loading && <p>Buscando referências da área…</p>}
+      {loading && <p>Finding area references…</p>}
       {!loading && filteredDocuments.length === 0 && (
         <div className="empty-state document-empty-state">
-          <strong>Nenhum documento encontrado</strong>
-          <span>Não há referências publicadas para esta área e filtro.</span>
+          <strong>No documents found</strong>
+          <span>There are no published references for this area and filter.</span>
         </div>
       )}
       <div className="inspector-document-grid">
@@ -130,11 +130,11 @@ export function InspectionDocumentsPage() {
               <h2>{document.title}</h2>
               {document.description && <p>{document.description}</p>}
               <small>
-                Versão {document.version} · {issueDateLabel(document.issueDate)} ·{' '}
+                Version {document.version} · {issueDateLabel(document.issueDate)} ·{' '}
                 {sizeLabel(document.size)}
               </small>
             </div>
-            <span className="document-open-label">Abrir →</span>
+            <span className="document-open-label">Open →</span>
           </Link>
         ))}
       </div>

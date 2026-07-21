@@ -7,6 +7,7 @@ import {
   query,
   runTransaction,
   serverTimestamp,
+  updateDoc,
   where,
   writeBatch,
 } from 'firebase/firestore';
@@ -24,7 +25,7 @@ import type { Area } from '../types/project';
 import type { UserProfile } from '../types/user';
 
 function requireDb() {
-  if (!db) throw new Error('Firebase não configurado.');
+  if (!db) throw new Error('Firebase is not configured.');
   return db;
 }
 
@@ -47,14 +48,14 @@ export async function createInspection(area: Area, inspector: UserProfile) {
     getDocs(query(collection(templateRef, 'items'), orderBy('order'))),
   ]);
 
-  if (!templateSnapshot.exists()) throw new Error('Checklist da área não encontrado.');
-  if (itemSnapshots.empty) throw new Error('O checklist não possui itens ativos.');
+  if (!templateSnapshot.exists()) throw new Error('Area checklist not found.');
+  if (itemSnapshots.empty) throw new Error('The checklist has no active items.');
 
   const template = { id: templateSnapshot.id, ...templateSnapshot.data() } as ChecklistTemplate;
   const activeItems = itemSnapshots.docs
     .map((item) => ({ id: item.id, ...item.data() }) as ChecklistTemplateItem)
     .filter((item) => item.active);
-  if (activeItems.length === 0) throw new Error('O checklist não possui itens ativos.');
+  if (activeItems.length === 0) throw new Error('The checklist has no active items.');
 
   const inspectionRef = doc(collection(firestore, 'inspections'));
   const batch = writeBatch(firestore);
@@ -109,7 +110,7 @@ export async function createInspection(area: Area, inspector: UserProfile) {
 
 export async function getInspection(inspectionId: string) {
   const snapshot = await getDoc(doc(requireDb(), 'inspections', inspectionId));
-  if (!snapshot.exists()) throw new Error('Inspeção não encontrada.');
+  if (!snapshot.exists()) throw new Error('Inspection not found.');
   return { id: snapshot.id, ...snapshot.data() } as Inspection;
 }
 
@@ -158,7 +159,7 @@ export async function updateInspectionItem(
     const inspectionSnapshot = await transaction.get(inspectionRef);
     const itemSnapshot = await transaction.get(itemRef);
     if (!inspectionSnapshot.exists() || !itemSnapshot.exists()) {
-      throw new Error('Inspeção ou item não encontrado.');
+      throw new Error('Inspection or item not found.');
     }
 
     const inspection = inspectionSnapshot.data() as Inspection;
@@ -175,8 +176,15 @@ export async function updateInspectionItem(
   });
 }
 
+export async function updateInspectionCoResponsible(inspectionId: string, name: string) {
+  await updateDoc(doc(requireDb(), 'inspections', inspectionId), {
+    coResponsibleName: name.trim(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function finalizeInspection(inspectionId: string) {
-  if (!functions) throw new Error('Firebase não configurado.');
+  if (!functions) throw new Error('Firebase is not configured.');
   const finalize = httpsCallable<{ inspectionId: string }, { status: 'completed' }>(
     functions,
     'finalizeInspection',

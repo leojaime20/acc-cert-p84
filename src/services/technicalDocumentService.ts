@@ -58,7 +58,7 @@ export class TechnicalDocumentError extends Error {
 }
 
 function requireFirebase() {
-  if (!db || !storage) throw new TechnicalDocumentError('Firebase não configurado.', 'firebase');
+  if (!db || !storage) throw new TechnicalDocumentError('Firebase is not configured.', 'firebase');
   return { db, storage };
 }
 
@@ -72,23 +72,23 @@ function normalizeFileName(fileName: string) {
 }
 
 export async function validateTechnicalDocumentFile(file: File) {
-  if (!file.name.toLocaleLowerCase('pt-BR').endsWith('.pdf')) {
-    throw new TechnicalDocumentError('Selecione um arquivo com extensão PDF.', 'extension');
+  if (!file.name.toLocaleLowerCase('en').endsWith('.pdf')) {
+    throw new TechnicalDocumentError('Select a file with a PDF extension.', 'extension');
   }
   if (file.type && file.type !== 'application/pdf') {
-    throw new TechnicalDocumentError('O arquivo selecionado não é um PDF.', 'mime-type');
+    throw new TechnicalDocumentError('The selected file is not a PDF.', 'mime-type');
   }
   if (file.size <= 0) {
-    throw new TechnicalDocumentError('O arquivo selecionado está vazio.', 'empty');
+    throw new TechnicalDocumentError('The selected file is empty.', 'empty');
   }
   if (file.size > MAX_TECHNICAL_DOCUMENT_SIZE) {
-    throw new TechnicalDocumentError('O PDF deve ter no máximo 50 MB.', 'too-large');
+    throw new TechnicalDocumentError('The PDF must be no larger than 50 MB.', 'too-large');
   }
 
   const signature = new TextDecoder('ascii').decode(await file.slice(0, 5).arrayBuffer());
   if (signature !== '%PDF-') {
     throw new TechnicalDocumentError(
-      'O conteúdo do arquivo não corresponde a um PDF válido.',
+      'The file contents do not match a valid PDF.',
       'signature',
     );
   }
@@ -108,7 +108,7 @@ export async function listTechnicalDocuments(projectId: string, includeInactive 
   );
   return snapshot.docs
     .map((item) => ({ id: item.id, ...item.data() }) as TechnicalDocument)
-    .sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
+    .sort((a, b) => a.title.localeCompare(b.title, 'en'));
 }
 
 export async function listTechnicalDocumentsForArea(projectId: string, areaId: string) {
@@ -122,7 +122,7 @@ export async function getTechnicalDocument(documentId: string) {
   const firebase = requireFirebase();
   const snapshot = await getDoc(doc(firebase.db, 'technicalDocuments', documentId));
   if (!snapshot.exists()) {
-    throw new TechnicalDocumentError('Documento não encontrado.', 'not-found');
+    throw new TechnicalDocumentError('Document not found.', 'not-found');
   }
   return { id: snapshot.id, ...snapshot.data() } as TechnicalDocument;
 }
@@ -161,11 +161,11 @@ export function uploadTechnicalDocument(
   const promise = (async () => {
     await validateTechnicalDocumentFile(file);
     if (!input.appliesToAllAreas && input.areaIds.length === 0) {
-      throw new TechnicalDocumentError('Selecione ao menos uma área.', 'area-required');
+      throw new TechnicalDocumentError('Select at least one area.', 'area-required');
     }
     if (existingDocument && existingDocument.projectId !== input.projectId) {
       throw new TechnicalDocumentError(
-        'A nova versão deve permanecer no mesmo projeto.',
+        'The new version must remain in the same project.',
         'project',
       );
     }
@@ -174,7 +174,7 @@ export function uploadTechnicalDocument(
       ? doc(firebase.db, 'technicalDocuments', existingDocument.id)
       : doc(collection(firebase.db, 'technicalDocuments'));
     const versionReference = doc(collection(documentReference, 'versions'));
-    const safeName = normalizeFileName(file.name) || 'documento.pdf';
+    const safeName = normalizeFileName(file.name) || 'document.pdf';
     const storagePath = `projects/${input.projectId}/technicalDocuments/${documentReference.id}/versions/${versionReference.id}-${safeName}`;
 
     const currentDocumentData = {
@@ -236,7 +236,7 @@ export function uploadTechnicalDocument(
         await updateDoc(documentReference, { status: 'failed', updatedAt: serverTimestamp() });
       }
       throw new TechnicalDocumentError(
-        cancelled ? 'O envio foi cancelado.' : 'Falha ao enviar o PDF. Tente novamente.',
+        cancelled ? 'The upload was cancelled.' : 'PDF upload failed. Try again.',
         cancelled ? 'cancelled' : 'upload',
         { cause: error },
       );
@@ -285,6 +285,6 @@ export async function removeFailedTechnicalDocumentFile(document: TechnicalDocum
   try {
     await deleteObject(ref(firebase.storage, document.storagePath));
   } catch {
-    // Um envio interrompido pode não ter criado o objeto.
+    // An interrupted upload may not have created the object.
   }
 }

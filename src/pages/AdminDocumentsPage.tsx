@@ -47,14 +47,14 @@ const emptyForm: DocumentFormState = {
 
 function sizeLabel(size: number) {
   if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
-  return `${(size / (1024 * 1024)).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} MB`;
+  return `${(size / (1024 * 1024)).toLocaleString('en', { maximumFractionDigits: 1 })} MB`;
 }
 
 function dateTimeLabel(version: TechnicalDocumentVersion) {
   const date = version.uploadedAt?.toDate?.();
   return date
-    ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(date)
-    : 'Envio recente';
+    ? new Intl.DateTimeFormat('en', { dateStyle: 'short', timeStyle: 'short' }).format(date)
+    : 'Recent upload';
 }
 
 export function AdminDocumentsPage() {
@@ -101,7 +101,7 @@ export function AdminDocumentsPage() {
         setDocuments(nextDocuments);
       })
       .catch(() => {
-        if (active) setError('Não foi possível carregar os documentos técnicos.');
+        if (active) setError('Unable to load technical documents.');
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -112,12 +112,12 @@ export function AdminDocumentsPage() {
   }, [profile]);
 
   const filteredDocuments = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase('pt-BR');
+    const term = search.trim().toLocaleLowerCase('en');
     return documents.filter((document) => {
       if (categoryFilter !== 'all' && document.category !== categoryFilter) return false;
       if (!term) return true;
       return [document.title, document.description, document.fileName, document.version].some(
-        (value) => value?.toLocaleLowerCase('pt-BR').includes(term),
+        (value) => value?.toLocaleLowerCase('en').includes(term),
       );
     });
   }, [categoryFilter, documents, search]);
@@ -134,7 +134,7 @@ export function AdminDocumentsPage() {
       setAreas(nextAreas);
       setDocuments(nextDocuments);
     } catch {
-      setError('Não foi possível carregar o projeto selecionado.');
+      setError('Unable to load the selected project.');
     } finally {
       setLoading(false);
     }
@@ -151,7 +151,7 @@ export function AdminDocumentsPage() {
       }
     } catch (validationError) {
       setFile(null);
-      setError(validationError instanceof Error ? validationError.message : 'PDF inválido.');
+      setError(validationError instanceof Error ? validationError.message : 'Invalid PDF.');
     }
   }
 
@@ -178,19 +178,19 @@ export function AdminDocumentsPage() {
 
   async function handleUpload() {
     if (!profile || !file) {
-      setError('Selecione o arquivo PDF.');
+      setError('Select a PDF file.');
       return;
     }
     if (form.title.trim().length < 2) {
-      setError('Informe o título do documento.');
+      setError('Enter the document title.');
       return;
     }
     if (!form.version.trim()) {
-      setError('Informe a versão do documento.');
+      setError('Enter the document version.');
       return;
     }
     if (!form.appliesToAllAreas && form.areaIds.length === 0) {
-      setError('Selecione ao menos uma área ou marque “Todas as áreas”.');
+      setError('Select at least one area or choose “All project areas”.');
       return;
     }
 
@@ -210,14 +210,14 @@ export function AdminDocumentsPage() {
       const uploaded = await handle.promise;
       setSuccess(
         replacement
-          ? `A versão ${uploaded.version} de “${uploaded.title}” foi publicada.`
-          : `“${uploaded.title}” foi publicado para os inspetores.`,
+          ? `Version ${uploaded.version} of “${uploaded.title}” was published.`
+          : `“${uploaded.title}” was published for inspectors.`,
       );
       resetForm();
       await refreshDocuments(form.projectId);
     } catch (uploadError) {
       setError(
-        uploadError instanceof Error ? uploadError.message : 'Não foi possível enviar o PDF.',
+        uploadError instanceof Error ? uploadError.message : 'Unable to upload the PDF.',
       );
     } finally {
       uploadHandle.current = undefined;
@@ -251,7 +251,7 @@ export function AdminDocumentsPage() {
       await setTechnicalDocumentActive(document.id, !document.active);
       await refreshDocuments(document.projectId);
     } catch {
-      setError('Não foi possível alterar a disponibilidade do documento.');
+      setError('Unable to change document availability.');
     }
   }
 
@@ -266,22 +266,22 @@ export function AdminDocumentsPage() {
     try {
       setVersions(await listTechnicalDocumentVersions(documentId));
     } catch {
-      setError('Não foi possível carregar o histórico de versões.');
+      setError('Unable to load version history.');
     }
   }
 
   return (
     <section className="admin-documents-page">
       <Link className="text-link back-link" to="/admin">
-        ← Voltar à administração
+        ← Back to administration
       </Link>
-      <p className="eyebrow">Administração</p>
+      <p className="eyebrow">Administration</p>
       <div className="page-heading">
-        <h1>Documentos técnicos</h1>
-        <span className="badge">PDF · até 50 MB</span>
+        <h1>Technical documents</h1>
+        <span className="badge">PDF · up to 50 MB</span>
       </div>
       <p className="page-intro">
-        Publique referências por projeto e área. Uma nova versão preserva o histórico do arquivo.
+        Publish references by project and area. A new version preserves the file history.
       </p>
 
       {error && <div className="notice notice-error">{error}</div>}
@@ -290,19 +290,19 @@ export function AdminDocumentsPage() {
       <section className="admin-section" ref={formAnchor}>
         <div className="admin-section-heading">
           <div>
-            <p className="eyebrow">Publicação</p>
-            <h2>{replacement ? `Nova versão de ${replacement.title}` : 'Adicionar documento'}</h2>
+            <p className="eyebrow">Publishing</p>
+            <h2>{replacement ? `New version of ${replacement.title}` : 'Add document'}</h2>
           </div>
           {replacement && (
             <button className="button button-outline compact-button" onClick={resetForm}>
-              Cancelar nova versão
+              Cancel new version
             </button>
           )}
         </div>
 
         <div className="technical-document-form">
           <label>
-            Projeto
+            Project
             <select
               value={form.projectId}
               disabled={uploading || Boolean(replacement)}
@@ -316,7 +316,7 @@ export function AdminDocumentsPage() {
             </select>
           </label>
           <label>
-            Título
+            Title
             <input
               value={form.title}
               disabled={uploading}
@@ -326,7 +326,7 @@ export function AdminDocumentsPage() {
             />
           </label>
           <label>
-            Categoria
+            Category
             <select
               value={form.category}
               disabled={uploading}
@@ -345,18 +345,18 @@ export function AdminDocumentsPage() {
             </select>
           </label>
           <label>
-            Versão
+            Version
             <input
               value={form.version}
               disabled={uploading}
-              placeholder="Ex.: 2.1"
+              placeholder="E.g. 2.1"
               onChange={(event) =>
                 setForm((current) => ({ ...current, version: event.target.value }))
               }
             />
           </label>
           <label>
-            Data de emissão
+            Issue date
             <input
               type="date"
               value={form.issueDate}
@@ -367,7 +367,7 @@ export function AdminDocumentsPage() {
             />
           </label>
           <label className="document-description-field">
-            Descrição
+            Description
             <textarea
               value={form.description}
               disabled={uploading}
@@ -380,7 +380,7 @@ export function AdminDocumentsPage() {
         </div>
 
         <fieldset className="area-selector" disabled={uploading}>
-          <legend>Áreas que poderão acessar</legend>
+          <legend>Areas that can access it</legend>
           <label className="check-option all-areas-option">
             <input
               type="checkbox"
@@ -393,7 +393,7 @@ export function AdminDocumentsPage() {
                 }))
               }
             />
-            Todas as áreas do projeto
+            All project areas
           </label>
           {!form.appliesToAllAreas && (
             <div className="area-options">
@@ -423,7 +423,7 @@ export function AdminDocumentsPage() {
                 setForm((current) => ({ ...current, active: event.target.checked }))
               }
             />
-            Disponível para inspetores
+            Available to inspectors
           </label>
           <label className="check-option">
             <input
@@ -434,7 +434,7 @@ export function AdminDocumentsPage() {
                 setForm((current) => ({ ...current, allowDownload: event.target.checked }))
               }
             />
-            Exibir opção de download
+            Show download option
           </label>
         </div>
 
@@ -453,14 +453,14 @@ export function AdminDocumentsPage() {
           <span className="pdf-dropzone-icon" aria-hidden="true">
             PDF
           </span>
-          <strong>{file ? file.name : 'Selecionar ou arrastar um PDF'}</strong>
-          <small>{file ? sizeLabel(file.size) : 'Máximo de 50 MB'}</small>
+          <strong>{file ? file.name : 'Select or drop a PDF'}</strong>
+          <small>{file ? sizeLabel(file.size) : 'Maximum 50 MB'}</small>
         </label>
 
         {uploading && (
-          <div className="upload-progress document-upload-progress" aria-label="Progresso do envio">
+          <div className="upload-progress document-upload-progress" aria-label="Upload progress">
             <span style={{ width: `${progress}%` }} />
-            <small>{progress}% enviado</small>
+            <small>{progress}% uploaded</small>
           </div>
         )}
         <div className="document-form-actions">
@@ -469,7 +469,7 @@ export function AdminDocumentsPage() {
               className="button button-outline compact-button"
               onClick={() => uploadHandle.current?.cancel()}
             >
-              Cancelar envio
+              Cancel upload
             </button>
           )}
           <button
@@ -477,7 +477,7 @@ export function AdminDocumentsPage() {
             disabled={uploading || !file}
             onClick={() => void handleUpload()}
           >
-            {uploading ? 'Enviando…' : replacement ? 'Publicar nova versão' : 'Publicar documento'}
+            {uploading ? 'Uploading…' : replacement ? 'Publish new version' : 'Publish document'}
           </button>
         </div>
       </section>
@@ -485,27 +485,27 @@ export function AdminDocumentsPage() {
       <section className="admin-section">
         <div className="admin-section-heading">
           <div>
-            <p className="eyebrow">Biblioteca</p>
-            <h2>{documents.length} documentos cadastrados</h2>
+            <p className="eyebrow">Library</p>
+            <h2>{documents.length} registered documents</h2>
           </div>
         </div>
         <div className="document-library-tools">
           <label>
-            Buscar
+            Search
             <input
               type="search"
               value={search}
-              placeholder="Título, arquivo, descrição ou versão"
+              placeholder="Title, file, description or version"
               onChange={(event) => setSearch(event.target.value)}
             />
           </label>
           <label>
-            Categoria
+            Category
             <select
               value={categoryFilter}
               onChange={(event) => setCategoryFilter(event.target.value)}
             >
-              <option value="all">Todas</option>
+              <option value="all">All</option>
               {technicalDocumentCategories.map((category) => (
                 <option key={category} value={category}>
                   {technicalDocumentCategoryLabels[category]}
@@ -516,9 +516,9 @@ export function AdminDocumentsPage() {
         </div>
 
         <div className="technical-document-list">
-          {loading && <p>Carregando documentos…</p>}
+          {loading && <p>Loading documents…</p>}
           {!loading && filteredDocuments.length === 0 && (
-            <div className="empty-state">Nenhum documento corresponde aos filtros.</div>
+            <div className="empty-state">No documents match the filters.</div>
           )}
           {filteredDocuments.map((document) => (
             <article className="technical-document-admin-card" key={document.id}>
@@ -529,17 +529,17 @@ export function AdminDocumentsPage() {
                 <strong>{document.title}</strong>
                 <span>{document.fileName}</span>
                 <small>
-                  Versão {document.version} · {sizeLabel(document.size)} ·{' '}
+                  Version {document.version} · {sizeLabel(document.size)} ·{' '}
                   {document.appliesToAllAreas
-                    ? 'Todas as áreas'
-                    : `${document.areaIds.length} área(s)`}
+                    ? 'All areas'
+                    : `${document.areaIds.length} area(s)`}
                 </small>
               </div>
               <div className="document-admin-status">
                 <span
                   className={`status-chip ${document.active ? 'status-completed' : 'status-cancelled'}`}
                 >
-                  {document.active ? 'Ativo' : 'Inativo'}
+                  {document.active ? 'Active' : 'Inactive'}
                 </span>
                 {document.status !== 'ready' && (
                   <span className="status-chip status-draft">{document.status}</span>
@@ -550,27 +550,27 @@ export function AdminDocumentsPage() {
                   className="button button-secondary compact-button"
                   onClick={() => startReplacement(document)}
                 >
-                  Nova versão
+                  New version
                 </button>
                 <button
                   className="button button-outline compact-button"
                   onClick={() => void toggleVersions(document.id)}
                 >
-                  {expandedVersions === document.id ? 'Ocultar histórico' : 'Histórico'}
+                  {expandedVersions === document.id ? 'Hide history' : 'History'}
                 </button>
                 <button
                   className="button button-outline compact-button"
                   onClick={() => void toggleActive(document)}
                 >
-                  {document.active ? 'Desativar' : 'Ativar'}
+                  {document.active ? 'Deactivate' : 'Activate'}
                 </button>
               </div>
               {expandedVersions === document.id && (
                 <div className="document-version-history">
-                  {versions.length === 0 && <small>Carregando histórico…</small>}
+                  {versions.length === 0 && <small>Loading history…</small>}
                   {versions.map((version) => (
                     <div key={version.id}>
-                      <strong>Versão {version.version}</strong>
+                      <strong>Version {version.version}</strong>
                       <span>{version.fileName}</span>
                       <small>
                         {sizeLabel(version.size)} · {dateTimeLabel(version)}

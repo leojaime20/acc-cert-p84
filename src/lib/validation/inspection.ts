@@ -10,20 +10,20 @@ export const inspectionItemSchema = z
   })
   .superRefine((item, context) => {
     if (['rejected', 'partially_approved'].includes(item.status) && !item.comment) {
-      context.addIssue({ code: 'custom', path: ['comment'], message: 'Comentário obrigatório.' });
+      context.addIssue({ code: 'custom', path: ['comment'], message: 'Comment is required.' });
     }
     if (item.status === 'rejected' && !item.recommendation) {
       context.addIssue({
         code: 'custom',
         path: ['recommendation'],
-        message: 'Recomendação obrigatória.',
+        message: 'Recommendation is required.',
       });
     }
     if (item.photoRequired && item.photoCount === 0) {
       context.addIssue({
         code: 'custom',
         path: ['photoCount'],
-        message: 'Fotografia obrigatória.',
+        message: 'Photo is required.',
       });
     }
   });

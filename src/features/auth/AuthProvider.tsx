@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       loading,
       async login(email, password) {
-        if (!auth) throw new Error('Firebase não configurado.');
+        if (!auth) throw new Error('Firebase is not configured.');
         await signInWithEmailAndPassword(auth, email, password);
       },
       async logout() {

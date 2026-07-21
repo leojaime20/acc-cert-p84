@@ -22,7 +22,7 @@ export function TechnicalDocumentReaderPage() {
   const [error, setError] = useState('');
 
   const loadDocumentBytes = useCallback(() => {
-    if (!document) return Promise.reject(new Error('Documento não carregado.'));
+    if (!document) return Promise.reject(new Error('Document not loaded.'));
     return getTechnicalDocumentBytes(document);
   }, [document]);
 
@@ -35,7 +35,7 @@ export function TechnicalDocumentReaderPage() {
           nextDocument.projectId === nextInspection.projectId &&
           (nextDocument.appliesToAllAreas || nextDocument.areaIds.includes(nextInspection.areaId));
         if (!appliesToInspection || !nextDocument.active || nextDocument.status !== 'ready') {
-          throw new Error('Documento indisponível para esta área.');
+          throw new Error('Document unavailable for this area.');
         }
         const nextUrl = await getTechnicalDocumentUrl(nextDocument);
         if (!active) return;
@@ -46,9 +46,9 @@ export function TechnicalDocumentReaderPage() {
       .catch((loadError) => {
         if (active) {
           setError(
-            loadError instanceof Error && loadError.message.includes('indisponível')
+            loadError instanceof Error && loadError.message.includes('unavailable')
               ? loadError.message
-              : 'Não foi possível abrir este documento agora.',
+              : 'Unable to open this document right now.',
           );
         }
       })
@@ -63,15 +63,15 @@ export function TechnicalDocumentReaderPage() {
   return (
     <section className="technical-document-reader-page">
       <Link className="text-link back-link" to={`/inspections/${inspectionId}/documents`}>
-        ← Voltar aos documentos
+        ← Back to documents
       </Link>
-      <p className="eyebrow">Documento de referência</p>
+      <p className="eyebrow">Reference document</p>
       <div className="reader-heading">
         <div>
-          <h1>{document?.title || (loading ? 'Carregando documento…' : 'Documento')}</h1>
+          <h1>{document?.title || (loading ? 'Loading document…' : 'Document')}</h1>
           {document && (
             <p>
-              {technicalDocumentCategoryLabels[document.category]} · Versão {document.version}
+              {technicalDocumentCategoryLabels[document.category]} · Version {document.version}
               {inspection ? ` · ${inspection.areaCode}` : ''}
             </p>
           )}
@@ -81,7 +81,7 @@ export function TechnicalDocumentReaderPage() {
         <div className="notice notice-error">
           {error}{' '}
           <button className="inline-retry" onClick={() => window.location.reload()}>
-            Tentar novamente
+            Try again
           </button>
         </div>
       )}

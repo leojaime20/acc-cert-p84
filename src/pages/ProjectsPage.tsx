@@ -20,7 +20,7 @@ export function ProjectsPage() {
         setProjects(nextProjects);
         if (nextProjects[0]) setAreas(await listAreas(nextProjects[0].id));
       })
-      .catch(() => setError('Não foi possível carregar as áreas.'))
+      .catch(() => setError('Unable to load the areas.'))
       .finally(() => setLoading(false));
   }, [profile]);
 
@@ -38,30 +38,30 @@ export function ProjectsPage() {
     <section>
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Obra ativa</p>
-          <h1>{projects[0]?.name || 'Obras'}</h1>
+          <p className="eyebrow">Active project</p>
+          <h1>{projects[0]?.name || 'Projects'}</h1>
         </div>
-        <span className="count-pill">{areas.length} áreas</span>
+        <span className="count-pill">{areas.length} areas</span>
       </div>
       <div className="filter-panel">
         <input
-          aria-label="Buscar área"
-          placeholder="Buscar código ou descrição"
+          aria-label="Search area"
+          placeholder="Search code or description"
           value={queryText}
           onChange={(event) => setQueryText(event.target.value)}
         />
         <select
-          aria-label="Filtrar por deck"
+          aria-label="Filter by deck"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
         >
-          <option value="">Todos os decks</option>
+          <option value="">All decks</option>
           {locations.map((item) => (
             <option key={item}>{item}</option>
           ))}
         </select>
       </div>
-      {loading && <p>Carregando áreas…</p>}
+      {loading && <p>Loading areas…</p>}
       {error && <div className="notice notice-error">{error}</div>}
       {!loading && !error && (
         <div className="card-grid">
@@ -80,7 +80,7 @@ export function ProjectsPage() {
             </Link>
           ))}
           {filteredAreas.length === 0 && (
-            <div className="empty-state">Nenhuma área encontrada.</div>
+            <div className="empty-state">No areas found.</div>
           )}
         </div>
       )}

@@ -12,20 +12,20 @@ export const finalizeInspection = onCall<FinalizeRequest>(
   async (request) => {
     const user = await requireActiveUser(request);
     const inspectionId = request.data.inspectionId?.trim();
-    if (!inspectionId) throw new HttpsError('invalid-argument', 'Inspeção obrigatória.');
+    if (!inspectionId) throw new HttpsError('invalid-argument', 'Inspection is required.');
 
     const inspectionRef = adminDb.doc(`inspections/${inspectionId}`);
 
     await adminDb.runTransaction(async (transaction) => {
       const inspectionSnapshot = await transaction.get(inspectionRef);
-      if (!inspectionSnapshot.exists) throw new HttpsError('not-found', 'Inspeção não encontrada.');
+      if (!inspectionSnapshot.exists) throw new HttpsError('not-found', 'Inspection not found.');
       const inspection = inspectionSnapshot.data()!;
       const canFinalize =
         user.role === 'admin' ||
         (inspection.inspectorId === user.uid && user.projectIds.includes(inspection.projectId));
-      if (!canFinalize) throw new HttpsError('permission-denied', 'Acesso negado.');
+      if (!canFinalize) throw new HttpsError('permission-denied', 'Access denied.');
       if (!['draft', 'reopened'].includes(inspection.status)) {
-        throw new HttpsError('failed-precondition', 'A inspeção não está aberta.');
+        throw new HttpsError('failed-precondition', 'The inspection is not open.');
       }
 
       const itemSnapshots = await transaction.get(inspectionRef.collection('items'));
@@ -41,7 +41,7 @@ export const finalizeInspection = onCall<FinalizeRequest>(
         notApplicable: 0,
       };
 
-      if (itemSnapshots.empty) pending.push('O checklist da inspeção não possui itens.');
+      if (itemSnapshots.empty) pending.push('The inspection checklist has no items.');
 
       for (const itemSnapshot of itemSnapshots.docs) {
         const item = itemSnapshot.data();
@@ -52,23 +52,23 @@ export const finalizeInspection = onCall<FinalizeRequest>(
         if (item.status === 'not_applicable') summary.notApplicable += 1;
         const label = item.code || `Item ${item.itemNumber || itemSnapshot.id}`;
         if (item.required && item.status === 'not_started')
-          pending.push(`${label}: não verificado`);
+          pending.push(`${label}: not verified`);
         if (['rejected', 'partially_approved'].includes(item.status) && !item.comment?.trim()) {
-          pending.push(`${label}: comentário obrigatório`);
+          pending.push(`${label}: comment is required`);
         }
         if (item.status === 'rejected' && !item.recommendation?.trim()) {
-          pending.push(`${label}: recomendação obrigatória`);
+          pending.push(`${label}: recommendation is required`);
         }
         if (item.photoRequired && !photos.some((photo) => photo.itemId === itemSnapshot.id)) {
-          pending.push(`${label}: fotografia obrigatória`);
+          pending.push(`${label}: photo is required`);
         }
       }
 
       if (photos.some((photo) => photo.uploadStatus && photo.uploadStatus !== 'completed')) {
-        pending.push('Existem fotografias com upload pendente.');
+        pending.push('There are photos with pending uploads.');
       }
       if (pending.length) {
-        throw new HttpsError('failed-precondition', 'A inspeção possui pendências.', { pending });
+        throw new HttpsError('failed-precondition', 'The inspection has pending items.', { pending });
       }
 
       transaction.update(inspectionRef, {

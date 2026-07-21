@@ -21,8 +21,8 @@ describe('validatePhotoFile', () => {
     }
   });
 
-  it('rejeita arquivos vazios', () => {
-    expect(() => validatePhotoFile(photoFile('image/jpeg', 0))).toThrow('está vazia');
+  it('rejects empty files', () => {
+    expect(() => validatePhotoFile(photoFile('image/jpeg', 0))).toThrow('photo is empty');
   });
 
   it('rejeita originais maiores que 25 MB', () => {

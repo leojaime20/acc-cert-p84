@@ -27,6 +27,7 @@ export interface Inspection {
   inspectorId: string;
   inspectorName: string;
   inspectorEmail: string;
+  coResponsibleName?: string;
   status: InspectionStatus;
   inspectionDate: Timestamp;
   summary: InspectionSummary;

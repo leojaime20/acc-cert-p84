@@ -7,8 +7,8 @@ import { useAuth } from '../features/auth/useAuth';
 import { isFirebaseConfigured } from '../lib/firebase/app';
 
 const loginSchema = z.object({
-  email: z.email('Informe um e-mail válido.'),
-  password: z.string().min(6, 'A senha deve possuir ao menos 6 caracteres.'),
+  email: z.email('Enter a valid email address.'),
+  password: z.string().min(6, 'Password must contain at least 6 characters.'),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -28,14 +28,14 @@ export function LoginPage() {
     <main className="login-page">
       <section className="login-card">
         <div className="login-heading">
-          <span className="brand-mark brand-mark-large">ACC</span>
+          <span className="brand-mark brand-mark-large">AC</span>
           <div>
-            <h1>Inspeção de obra</h1>
-            <p>P84 • Certificação diária de áreas e evidências.</p>
+            <h1>AC Certificate</h1>
+            <p>P84 • Daily area certification and evidence.</p>
           </div>
         </div>
         {!isFirebaseConfigured && (
-          <div className="notice notice-warning">Configure o Firebase para habilitar o acesso.</div>
+          <div className="notice notice-warning">Configure Firebase to enable access.</div>
         )}
         <form
           onSubmit={handleSubmit(async (values) => {
@@ -43,7 +43,7 @@ export function LoginPage() {
             try {
               await login(values.email, values.password);
             } catch {
-              setError('Não foi possível entrar. Confira o e-mail, a senha e seu acesso.');
+              setError('Unable to sign in. Check your email, password and access.');
             }
           })}
         >
@@ -53,7 +53,7 @@ export function LoginPage() {
             {errors.email && <small className="field-error">{errors.email.message}</small>}
           </label>
           <label>
-            Senha
+            Password
             <input type="password" autoComplete="current-password" {...register('password')} />
             {errors.password && <small className="field-error">{errors.password.message}</small>}
           </label>
@@ -62,7 +62,7 @@ export function LoginPage() {
             className="button button-primary"
             disabled={isSubmitting || !isFirebaseConfigured}
           >
-            {isSubmitting ? 'Entrando…' : 'Entrar'}
+            {isSubmitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
       </section>

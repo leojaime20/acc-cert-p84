@@ -10,11 +10,11 @@ import type { UserProfile } from '../../types/user';
 import { PhotoUploader } from './PhotoUploader';
 
 const statuses: Array<{ value: ChecklistItemStatus; label: string; short: string }> = [
-  { value: 'approved', label: 'Aprovado', short: 'Aprovado' },
-  { value: 'partially_approved', label: 'Parcialmente aprovado', short: 'Parcial' },
-  { value: 'rejected', label: 'Reprovado', short: 'Reprovado' },
-  { value: 'not_applicable', label: 'Não aplicável', short: 'N/A' },
-  { value: 'not_started', label: 'Não verificado', short: 'Pendente' },
+  { value: 'approved', label: 'Approved', short: 'Approved' },
+  { value: 'partially_approved', label: 'Partially approved', short: 'Partial' },
+  { value: 'rejected', label: 'Rejected', short: 'Rejected' },
+  { value: 'not_applicable', label: 'Not applicable', short: 'N/A' },
+  { value: 'not_started', label: 'Not verified', short: 'Pending' },
 ];
 
 interface ChecklistItemEditorProps {
@@ -93,7 +93,7 @@ export function ChecklistItemEditor({
     return () => onRegisterFlush?.(item.id, null);
   }, [flushPendingText, item.id, onRegisterFlush]);
 
-  const statusLabel = statuses.find((option) => option.value === status)?.short || 'Pendente';
+  const statusLabel = statuses.find((option) => option.value === status)?.short || 'Pending';
   const needsComment = status === 'rejected' || status === 'partially_approved';
   const needsRecommendation = status === 'rejected';
 
@@ -110,13 +110,13 @@ export function ChecklistItemEditor({
       <div className="checklist-editor-body">
         {item.verificationInstruction && item.verificationInstruction !== item.description && (
           <div className="verification-note">
-            <strong>Como verificar</strong>
+            <strong>How to verify</strong>
             <p>{item.verificationInstruction}</p>
           </div>
         )}
         <fieldset disabled={!editable}>
           <legend>
-            Status do item {item.required && <span className="required-mark">Obrigatório</span>}
+            Item status {item.required && <span className="required-mark">Required</span>}
           </legend>
           <div className="status-options">
             {statuses.slice(0, 4).map((option) => (
@@ -136,13 +136,13 @@ export function ChecklistItemEditor({
           </div>
         </fieldset>
         <label>
-          Comentário {needsComment && <span className="required-text">obrigatório</span>}
+          Comment {needsComment && <span className="required-text">required</span>}
           <textarea
             value={comment}
             disabled={!editable}
             rows={3}
             placeholder={
-              status === 'not_applicable' ? 'Informe a justificativa' : 'Registre uma observação'
+              status === 'not_applicable' ? 'Provide a justification' : 'Add an observation'
             }
             onChange={(event) => {
               textChanged.current = true;
@@ -151,13 +151,13 @@ export function ChecklistItemEditor({
           />
         </label>
         <label>
-          Recomendação ou ação corretiva{' '}
-          {needsRecommendation && <span className="required-text">obrigatória</span>}
+          Recommendation or corrective action{' '}
+          {needsRecommendation && <span className="required-text">required</span>}
           <textarea
             value={recommendation}
             disabled={!editable}
             rows={3}
-            placeholder="Descreva a ação recomendada"
+            placeholder="Describe the recommended action"
             onChange={(event) => {
               textChanged.current = true;
               setRecommendation(event.target.value);
@@ -165,13 +165,13 @@ export function ChecklistItemEditor({
           />
         </label>
         <div className={`save-indicator save-${saveState}`} aria-live="polite">
-          {saveState === 'saving' && 'Salvando…'}
-          {saveState === 'saved' && '✓ Salvo automaticamente'}
-          {saveState === 'error' && 'Erro ao salvar. Altere o campo para tentar novamente.'}
+          {saveState === 'saving' && 'Saving…'}
+          {saveState === 'saved' && '✓ Saved automatically'}
+          {saveState === 'error' && 'Save error. Change the field to try again.'}
         </div>
         <div className="item-photos-heading">
-          <strong>Evidências fotográficas</strong>
-          {item.photoRequired && <span className="required-mark">Obrigatória</span>}
+          <strong>Photo evidence</strong>
+          {item.photoRequired && <span className="required-mark">Required</span>}
         </div>
         <PhotoUploader
           inspectionId={inspectionId}

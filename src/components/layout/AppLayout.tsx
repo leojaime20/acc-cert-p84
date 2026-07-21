@@ -8,12 +8,12 @@ export function AppLayout() {
     <div className="app-shell">
       <header className="topbar">
         <div className="brand-lockup">
-          <span className="brand-mark">ACC</span>
-          <span className="brand-name">Cert</span>
+          <span className="brand-mark">AC</span>
+          <span className="brand-name">Certificate</span>
           <span className="brand-context">P84</span>
         </div>
         <button className="button button-quiet" onClick={() => void logout()}>
-          Sair
+          Sign out
         </button>
       </header>
       <main className="page-container">
@@ -23,10 +23,10 @@ export function AppLayout() {
         </div>
         <Outlet />
       </main>
-      <nav className="bottom-nav" aria-label="Navegação principal">
-        <NavLink to="/projects">Obras</NavLink>
-        <NavLink to="/history">Inspeções</NavLink>
-        {profile?.role === 'admin' && <NavLink to="/admin">Administração</NavLink>}
+      <nav className="bottom-nav" aria-label="Main navigation">
+        <NavLink to="/projects">Projects</NavLink>
+        <NavLink to="/history">Inspections</NavLink>
+        {profile?.role === 'admin' && <NavLink to="/admin">Administration</NavLink>}
       </nav>
     </div>
   );

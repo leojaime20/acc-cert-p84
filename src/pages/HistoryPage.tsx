@@ -5,17 +5,17 @@ import { listInspections } from '../services/inspectionService';
 import type { Inspection } from '../types/inspection';
 
 const statusLabels = {
-  draft: 'Rascunho',
-  completed: 'Concluída',
-  reopened: 'Reaberta',
-  cancelled: 'Cancelada',
+  draft: 'Draft',
+  completed: 'Completed',
+  reopened: 'Reopened',
+  cancelled: 'Cancelled',
 };
 
 function formatDate(inspection: Inspection) {
   const date = inspection.createdAt?.toDate?.();
   return date
-    ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(date)
-    : 'Agora';
+    ? new Intl.DateTimeFormat('en', { dateStyle: 'short', timeStyle: 'short' }).format(date)
+    : 'Now';
 }
 
 export function HistoryPage() {
@@ -28,21 +28,21 @@ export function HistoryPage() {
     if (!profile) return;
     void listInspections(profile.projectIds, profile.role === 'admin')
       .then(setInspections)
-      .catch(() => setError('Não foi possível carregar as inspeções.'))
+      .catch(() => setError('Unable to load inspections.'))
       .finally(() => setLoading(false));
   }, [profile]);
 
   return (
     <section>
-      <p className="eyebrow">Registros</p>
+      <p className="eyebrow">Records</p>
       <div className="page-heading">
-        <h1>Inspeções</h1>
+        <h1>Inspections</h1>
         <span className="count-pill">{inspections.length}</span>
       </div>
-      {loading && <p>Carregando inspeções…</p>}
+      {loading && <p>Loading inspections…</p>}
       {error && <div className="notice notice-error">{error}</div>}
       {!loading && !error && inspections.length === 0 && (
-        <div className="empty-state">Nenhuma inspeção criada até o momento.</div>
+        <div className="empty-state">No inspections have been created yet.</div>
       )}
       <div className="inspection-list">
         {inspections.map((inspection) => (
@@ -63,7 +63,7 @@ export function HistoryPage() {
                 {inspection.inspectorName?.charAt(0).toUpperCase() || 'I'}
               </span>
               <div>
-                <span>Inspetor responsável</span>
+                <span>Responsible inspector</span>
                 <strong>{inspection.inspectorName}</strong>
                 <small>{inspection.inspectorEmail}</small>
               </div>

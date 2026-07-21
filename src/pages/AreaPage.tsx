@@ -18,7 +18,7 @@ export function AreaPage() {
     if (!projectId || !areaId) return;
     void getArea(projectId, areaId)
       .then(setArea)
-      .catch(() => setError('Não foi possível carregar os dados desta área.'))
+      .catch(() => setError('Unable to load this area.'))
       .finally(() => setLoading(false));
   }, [areaId, projectId]);
 
@@ -30,23 +30,23 @@ export function AreaPage() {
       const inspectionId = await createInspection(area, profile);
       navigate(`/inspections/${inspectionId}`);
     } catch {
-      setError('Não foi possível criar a inspeção. Tente novamente.');
+      setError('Unable to create the inspection. Try again.');
       setCreating(false);
     }
   }
 
   return (
     <section>
-      <p className="eyebrow">Área/Zona</p>
-      <h1>{area?.code || (loading ? 'Carregando…' : areaId)}</h1>
+      <p className="eyebrow">Area / zone</p>
+      <h1>{area?.code || (loading ? 'Loading…' : areaId)}</h1>
       {area && (
         <div className="area-summary">
           <div>
-            <span>Descrição</span>
+            <span>Description</span>
             <strong>{area.name}</strong>
           </div>
           <div>
-            <span>Localização</span>
+            <span>Location</span>
             <strong>{area.location}</strong>
           </div>
           <div>
@@ -57,9 +57,9 @@ export function AreaPage() {
       )}
       {error && <div className="notice notice-error">{error}</div>}
       <div className="action-card">
-        <h2>Nova inspeção</h2>
+        <h2>New inspection</h2>
         <p>
-          O checklist da área será copiado para um novo rascunho em nome de{' '}
+          The area checklist will be copied into a new draft for{' '}
           <strong>{profile?.name}</strong>.
         </p>
         <button
@@ -67,11 +67,11 @@ export function AreaPage() {
           disabled={!area || !profile || creating}
           onClick={() => void handleCreate()}
         >
-          {creating ? 'Criando inspeção…' : 'Iniciar inspeção'}
+          {creating ? 'Creating inspection…' : 'Start inspection'}
         </button>
       </div>
       <Link className="text-link" to={`/projects`}>
-        ← Voltar às áreas de {projectId}
+        ← Back to {projectId} areas
       </Link>
     </section>
   );
