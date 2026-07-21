@@ -706,6 +706,11 @@ label {
   white-space: nowrap;
   border: 0;
 }
+.photo-source-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
 .camera-button {
   display: flex;
   align-items: center;
@@ -721,6 +726,12 @@ label {
 }
 .camera-button > span {
   font-size: 1.3rem;
+}
+.device-photo-button {
+  border-style: solid;
+  border-color: #c7d5ce;
+  background: white;
+  color: var(--ink);
 }
 .photo-preview {
   display: grid;
@@ -852,6 +863,9 @@ label {
   }
   .photo-actions .button {
     width: 100%;
+  }
+  .photo-source-actions {
+    grid-template-columns: 1fr;
   }
 }
 
