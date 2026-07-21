@@ -114,7 +114,7 @@ export const exportDashboardPackage = onCall(
     const administrator = await requireAdmin(request);
     const exports = await loadAllInspections();
     if (exports.length === 0) {
-      throw new HttpsError('failed-precondition', 'Não há inspeções para exportar.');
+      throw new HttpsError('failed-precondition', 'There are no inspections to export.');
     }
 
     const bucket = adminStorage.bucket();
@@ -134,7 +134,7 @@ export const exportDashboardPackage = onCall(
         const item = photo.itemId ? itemById.get(String(photo.itemId)) : undefined;
         const archivePath = buildPhotoArchivePath({
           inspectionCode: String(inspection.code || inspection.id),
-          itemCode: item?.code || (photo.itemId ? String(photo.itemId) : 'GERAIS'),
+          itemCode: item?.code || (photo.itemId ? String(photo.itemId) : 'GENERAL'),
           photoId: photo.id,
           order: photoIndex + 1,
           storagePath: String(photo.storagePath || ''),
@@ -164,7 +164,7 @@ export const exportDashboardPackage = onCall(
           inspection_code: inspection.code,
           area_code: inspection.areaCode,
           item_id: photo.itemId || '',
-          item_code: item?.code || (photo.itemId ? String(photo.itemId) : 'GERAIS'),
+          item_code: item?.code || (photo.itemId ? String(photo.itemId) : 'GENERAL'),
           category: photo.itemId ? 'item' : 'general',
           photo_id: photo.id,
           archive_path: archivePath,
@@ -183,9 +183,9 @@ export const exportDashboardPackage = onCall(
       if (reportStoragePath) {
         const [exists] = await bucket.file(reportStoragePath).exists();
         if (exists) {
-          reportArchivePath = `relatorios/${sanitizeArchiveSegment(
+          reportArchivePath = `reports/${sanitizeArchiveSegment(
             inspection.code || inspection.id,
-            'inspecao',
+            'inspection',
           )}.pdf`;
           assets.push({ storagePath: reportStoragePath, archivePath: reportArchivePath });
         } else {
@@ -260,24 +260,24 @@ export const exportDashboardPackage = onCall(
     });
     archive.pipe(output);
     archive.append(csvText(INSPECTION_HEADERS, inspectionRows), {
-      name: 'dados/inspecoes_itens.csv',
+      name: 'data/inspection_items.csv',
     });
-    archive.append(csvText(PHOTO_HEADERS, photoRows), { name: 'dados/manifesto_imagens.csv' });
+    archive.append(csvText(PHOTO_HEADERS, photoRows), { name: 'data/image_manifest.csv' });
     archive.append(
       [
-        'ACC Cert - Pacote para dashboards',
+        'AC Certificate - Dashboard package',
         '',
-        'dados/inspecoes_itens.csv: uma linha por item de checklist, com os dados da inspeção repetidos para facilitar o uso em Excel e Power BI.',
-        'dados/manifesto_imagens.csv: relação entre cada fotografia, a inspeção, o item e o caminho no pacote.',
-        'imagens/: fotografias organizadas por código da inspeção e código do item. Fotografias gerais ficam na pasta GERAIS.',
-        'relatorios/: relatórios PDF disponíveis no momento da exportação.',
+        'data/inspection_items.csv: one row per checklist item, repeating inspection fields to support Excel and Power BI.',
+        'data/image_manifest.csv: links each photo to its inspection, item and package path.',
+        'images/: photos organized by inspection and item code. General photos are in the GENERAL folder.',
+        'reports/: PDF reports available when the export was generated.',
         '',
-        'Datas estão em ISO 8601 (UTC) e os arquivos CSV usam UTF-8 com cabeçalho.',
+        'Dates use ISO 8601 (UTC), and CSV files use UTF-8 with headers.',
       ].join('\r\n'),
-      { name: 'LEIA-ME.txt' },
+      { name: 'README.txt' },
     );
     if (missingFiles.length) {
-      archive.append(`${missingFiles.join('\r\n')}\r\n`, { name: 'dados/arquivos_ausentes.txt' });
+      archive.append(`${missingFiles.join('\r\n')}\r\n`, { name: 'data/missing_files.txt' });
     }
     for (const asset of assets) {
       archive.append(bucket.file(asset.storagePath).createReadStream(), {
@@ -297,7 +297,7 @@ export const exportDashboardPackage = onCall(
         inspections: exports.length,
         rows: inspectionRows.length,
         photos: photoRows.length,
-        reports: assets.filter((asset) => asset.archivePath.startsWith('relatorios/')).length,
+        reports: assets.filter((asset) => asset.archivePath.startsWith('reports/')).length,
         missingFiles: missingFiles.length,
       },
       createdAt: FieldValue.serverTimestamp(),
@@ -310,7 +310,7 @@ export const exportDashboardPackage = onCall(
         inspections: exports.length,
         rows: inspectionRows.length,
         photos: photoRows.length,
-        reports: assets.filter((asset) => asset.archivePath.startsWith('relatorios/')).length,
+        reports: assets.filter((asset) => asset.archivePath.startsWith('reports/')).length,
       },
     };
   },

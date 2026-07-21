@@ -12,7 +12,7 @@ import { db } from '../lib/firebase/firestore';
 import type { Area, Project } from '../types/project';
 
 function requireDb() {
-  if (!db) throw new Error('Firebase não configurado.');
+  if (!db) throw new Error('Firebase is not configured.');
   return db;
 }
 
@@ -37,6 +37,6 @@ export async function listAreas(projectId: string) {
 
 export async function getArea(projectId: string, areaId: string) {
   const snapshot = await getDoc(doc(requireDb(), 'projects', projectId, 'areas', areaId));
-  if (!snapshot.exists()) throw new Error('Área não encontrada.');
+  if (!snapshot.exists()) throw new Error('Area not found.');
   return { id: snapshot.id, ...snapshot.data() } as Area;
 }

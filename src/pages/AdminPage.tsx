@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { useAuth } from '../features/auth/useAuth';
 import {
   generateDashboardExport,
+  deleteInspection as deleteInspectionRecord,
   listUsers,
   manageUserAccess,
   sendAccessEmail,
@@ -16,24 +17,31 @@ import type { Inspection } from '../types/inspection';
 import type { UserProfile } from '../types/user';
 
 const userSchema = z.object({
-  name: z.string().trim().min(2, 'Informe o nome do usuário.'),
-  email: z.email('Informe um e-mail válido.'),
+  name: z.string().trim().min(2, 'Enter the user name.'),
+  email: z.email('Enter a valid email address.'),
   role: z.enum(['inspector', 'viewer']),
 });
 
 type UserForm = z.infer<typeof userSchema>;
 
 const roleLabels = {
-  admin: 'Administrador',
-  inspector: 'Inspetor',
-  viewer: 'Visualizador',
+  admin: 'Administrator',
+  inspector: 'Inspector',
+  viewer: 'Viewer',
+};
+
+const inspectionStatusLabels = {
+  draft: 'Draft',
+  completed: 'Completed',
+  reopened: 'Reopened',
+  cancelled: 'Cancelled',
 };
 
 function dateLabel(inspection: Inspection) {
   const date = inspection.inspectionDate?.toDate?.();
   return date
-    ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(date)
-    : 'Data não informada';
+    ? new Intl.DateTimeFormat('en', { dateStyle: 'short', timeStyle: 'short' }).format(date)
+    : 'Date unavailable';
 }
 
 function downloadFile(url: string, fileName: string) {
@@ -54,9 +62,11 @@ export function AdminPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [reportSearch, setReportSearch] = useState('');
+  const [inspectionSearch, setInspectionSearch] = useState('');
   const [openingReport, setOpeningReport] = useState('');
   const [updatingUser, setUpdatingUser] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [deletingInspection, setDeletingInspection] = useState('');
   const [exportSummary, setExportSummary] = useState('');
   const {
     register,
@@ -88,7 +98,7 @@ export function AdminPage() {
         setInspections(nextInspections);
       })
       .catch(() => {
-        if (active) setError('Não foi possível carregar os dados administrativos.');
+        if (active) setError('Unable to load the administration data.');
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -103,7 +113,7 @@ export function AdminPage() {
     [inspections],
   );
   const filteredReports = useMemo(() => {
-    const term = reportSearch.trim().toLocaleLowerCase('pt-BR');
+    const term = reportSearch.trim().toLocaleLowerCase('en');
     if (!term) return reports;
     return reports.filter((inspection) =>
       [
@@ -112,9 +122,23 @@ export function AdminPage() {
         inspection.areaName,
         inspection.inspectorName,
         inspection.inspectorEmail,
-      ].some((value) => value?.toLocaleLowerCase('pt-BR').includes(term)),
+      ].some((value) => value?.toLocaleLowerCase('en').includes(term)),
     );
   }, [reportSearch, reports]);
+  const filteredInspections = useMemo(() => {
+    const term = inspectionSearch.trim().toLocaleLowerCase('en');
+    if (!term) return inspections;
+    return inspections.filter((inspection) =>
+      [
+        inspection.code,
+        inspection.areaCode,
+        inspection.areaName,
+        inspection.inspectorName,
+        inspection.inspectorEmail,
+        inspection.status,
+      ].some((value) => value?.toLocaleLowerCase('en').includes(term)),
+    );
+  }, [inspectionSearch, inspections]);
 
   async function handleUserSubmit(values: UserForm) {
     setError('');
@@ -126,20 +150,20 @@ export function AdminPage() {
         active: true,
         projectIds: ['p84'],
       });
-      let message = `Acesso de ${values.email} configurado com sucesso.`;
+      let message = `Access for ${values.email} was configured successfully.`;
       if (result.passwordSetupRequired) {
         try {
           await sendAccessEmail(values.email);
-          message = `Usuário criado. O e-mail para definição de senha foi enviado para ${values.email}.`;
+          message = `User created. A password setup email was sent to ${values.email}.`;
         } catch {
-          message = `Usuário criado, mas o e-mail de definição de senha não foi enviado. Use “Reenviar acesso” na lista abaixo.`;
+          message = `User created, but the password setup email could not be sent. Use “Resend access” below.`;
         }
       }
       setSuccess(message);
       reset({ name: '', email: '', role: 'inspector' });
       await refreshData();
     } catch {
-      setError('Não foi possível configurar esse usuário. Verifique os dados e tente novamente.');
+      setError('Unable to configure this user. Check the details and try again.');
     }
   }
 
@@ -155,10 +179,10 @@ export function AdminPage() {
         active: !user.active,
         projectIds: user.projectIds?.length ? user.projectIds : ['p84'],
       });
-      setSuccess(`${user.name} foi ${user.active ? 'desativado' : 'reativado'}.`);
+      setSuccess(`${user.name} was ${user.active ? 'deactivated' : 'reactivated'}.`);
       await refreshData();
     } catch {
-      setError('Não foi possível alterar o acesso desse usuário.');
+      setError('Unable to change this user’s access.');
     } finally {
       setUpdatingUser('');
     }
@@ -170,9 +194,9 @@ export function AdminPage() {
     setSuccess('');
     try {
       await sendAccessEmail(user.email);
-      setSuccess(`E-mail para definição de senha enviado para ${user.email}.`);
+      setSuccess(`A password setup email was sent to ${user.email}.`);
     } catch {
-      setError('Não foi possível enviar o e-mail de acesso agora.');
+      setError('Unable to send the access email right now.');
     } finally {
       setUpdatingUser('');
     }
@@ -186,7 +210,7 @@ export function AdminPage() {
       const url = await getStorageDownloadUrl(inspection.reportStoragePath);
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch {
-      setError('O relatório não pôde ser aberto agora.');
+      setError('The report could not be opened right now.');
     } finally {
       setOpeningReport('');
     }
@@ -201,72 +225,89 @@ export function AdminPage() {
       const result = await generateDashboardExport();
       downloadFile(result.downloadUrl, result.fileName);
       setExportSummary(
-        `${result.summary.inspections} inspeções, ${result.summary.rows} itens, ${result.summary.photos} fotografias e ${result.summary.reports} relatórios incluídos.`,
+        `${result.summary.inspections} inspections, ${result.summary.rows} items, ${result.summary.photos} photos and ${result.summary.reports} reports included.`,
       );
     } catch {
-      setError('Não foi possível gerar o pacote para dashboards. Tente novamente.');
+      setError('Unable to generate the dashboard package. Try again.');
     } finally {
       setExporting(false);
     }
   }
 
+  async function removeInspection(inspection: Inspection) {
+    const confirmed = window.confirm(
+      `Delete inspection ${inspection.code}? This permanently removes its checklist, photos and report.`,
+    );
+    if (!confirmed) return;
+    setDeletingInspection(inspection.id);
+    setError('');
+    setSuccess('');
+    try {
+      await deleteInspectionRecord(inspection.id);
+      setSuccess(`Inspection ${inspection.code} was deleted.`);
+      await refreshData();
+    } catch {
+      setError('Unable to delete this inspection. Try again.');
+    } finally {
+      setDeletingInspection('');
+    }
+  }
+
   return (
     <section className="admin-page">
-      <p className="eyebrow">Administração</p>
+      <p className="eyebrow">Administration</p>
       <div className="page-heading">
-        <h1>Central administrativa</h1>
-        <span className="badge">Acesso restrito</span>
+        <h1>Administration center</h1>
+        <span className="badge">Restricted access</span>
       </div>
-      <p className="page-intro">
-        Gerencie acessos, consulte os relatórios e prepare todos os dados para análise.
-      </p>
+      <p className="page-intro">Manage access, review inspections and prepare data for analysis.</p>
 
       <Link className="admin-module-link" to="/admin/documents">
         <span className="pdf-file-mark" aria-hidden="true">
           PDF
         </span>
         <span>
-          <strong>Documentos técnicos</strong>
-          <small>Publicar referências e gerenciar versões por área</small>
+          <strong>Technical documents</strong>
+          <small>Publish references and manage versions by area</small>
         </span>
         <span aria-hidden="true">→</span>
       </Link>
 
       {error && <div className="notice notice-error">{error}</div>}
       {success && <div className="notice notice-success">{success}</div>}
-      {loading && <p>Carregando central administrativa…</p>}
+      {loading && <p>Loading the administration center…</p>}
 
       {!loading && (
         <>
-          <div className="admin-summary" aria-label="Resumo administrativo">
+          <div className="admin-summary" aria-label="Administration summary">
             <div>
               <strong>{users.filter((user) => user.active).length}</strong>
-              <span>Usuários ativos</span>
+              <span>Active users</span>
             </div>
             <div>
               <strong>{inspections.length}</strong>
-              <span>Inspeções</span>
+              <span>Inspections</span>
             </div>
             <div>
               <strong>{reports.length}</strong>
-              <span>Relatórios prontos</span>
+              <span>Ready reports</span>
             </div>
           </div>
 
           <section className="admin-section">
             <div className="admin-section-heading">
               <div>
-                <p className="eyebrow">Controle de acesso</p>
-                <h2>Adicionar usuário</h2>
+                <p className="eyebrow">Access control</p>
+                <h2>Add user</h2>
               </div>
               <span className="admin-section-number">01</span>
             </div>
             <p className="section-description">
-              O usuário receberá um e-mail para definir a senha. O acesso será restrito à obra P84.
+              The user will receive an email to set a password. Access is restricted to project P84.
             </p>
             <form className="admin-user-form" onSubmit={handleSubmit(handleUserSubmit)}>
               <label>
-                Nome
+                Name
                 <input type="text" autoComplete="name" {...register('name')} />
                 {errors.name && <small className="field-error">{errors.name.message}</small>}
               </label>
@@ -276,14 +317,14 @@ export function AdminPage() {
                 {errors.email && <small className="field-error">{errors.email.message}</small>}
               </label>
               <label>
-                Perfil
+                Role
                 <select {...register('role')}>
-                  <option value="inspector">Inspetor</option>
-                  <option value="viewer">Visualizador</option>
+                  <option value="inspector">Inspector</option>
+                  <option value="viewer">Viewer</option>
                 </select>
               </label>
               <button className="button button-primary compact-button" disabled={isSubmitting}>
-                {isSubmitting ? 'Configurando…' : 'Adicionar e enviar acesso'}
+                {isSubmitting ? 'Configuring…' : 'Add and send access'}
               </button>
             </form>
 
@@ -304,7 +345,7 @@ export function AdminPage() {
                     <span
                       className={`status-chip ${user.active ? 'status-completed' : 'status-cancelled'}`}
                     >
-                      {user.active ? 'Ativo' : 'Inativo'}
+                      {user.active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
                   <div className="admin-user-actions">
@@ -313,14 +354,14 @@ export function AdminPage() {
                       disabled={updatingUser === user.uid || !user.active}
                       onClick={() => void resendAccess(user)}
                     >
-                      Reenviar acesso
+                      Resend access
                     </button>
                     <button
                       className="button button-outline compact-button"
                       disabled={updatingUser === user.uid || user.uid === profile?.uid}
                       onClick={() => void toggleUser(user)}
                     >
-                      {user.active ? 'Desativar' : 'Reativar'}
+                      {user.active ? 'Deactivate' : 'Reactivate'}
                     </button>
                   </div>
                 </article>
@@ -331,22 +372,22 @@ export function AdminPage() {
           <section className="admin-section">
             <div className="admin-section-heading">
               <div>
-                <p className="eyebrow">Documentos oficiais</p>
-                <h2>Biblioteca de relatórios</h2>
+                <p className="eyebrow">Official documents</p>
+                <h2>Report library</h2>
               </div>
               <span className="admin-section-number">02</span>
             </div>
             <div className="report-library-tools">
               <label>
-                Buscar relatório
+                Search reports
                 <input
                   type="search"
-                  placeholder="Código, área, inspetor ou e-mail"
+                  placeholder="Code, area, inspector or email"
                   value={reportSearch}
                   onChange={(event) => setReportSearch(event.target.value)}
                 />
               </label>
-              <span>{filteredReports.length} relatório(s)</span>
+              <span>{filteredReports.length} report(s)</span>
             </div>
             <div className="admin-report-list">
               {filteredReports.map((inspection) => (
@@ -358,7 +399,7 @@ export function AdminPage() {
                     </span>
                   </div>
                   <div>
-                    <span>Inspetor</span>
+                    <span>Inspector</span>
                     <strong>{inspection.inspectorName}</strong>
                   </div>
                   <time>{dateLabel(inspection)}</time>
@@ -367,20 +408,20 @@ export function AdminPage() {
                       className="button button-secondary compact-button"
                       to={`/inspections/${inspection.id}`}
                     >
-                      Ver inspeção
+                      View inspection
                     </Link>
                     <button
                       className="button report-button compact-button"
                       disabled={openingReport === inspection.id}
                       onClick={() => void openReport(inspection)}
                     >
-                      {openingReport === inspection.id ? 'Abrindo…' : 'Abrir PDF'}
+                      {openingReport === inspection.id ? 'Opening…' : 'Open PDF'}
                     </button>
                   </div>
                 </article>
               ))}
               {filteredReports.length === 0 && (
-                <div className="empty-state">Nenhum relatório corresponde à busca.</div>
+                <div className="empty-state">No reports match your search.</div>
               )}
             </div>
           </section>
@@ -388,30 +429,93 @@ export function AdminPage() {
           <section className="admin-section export-section">
             <div className="admin-section-heading">
               <div>
-                <p className="eyebrow">Excel e Power BI</p>
-                <h2>Pacote para dashboards</h2>
+                <p className="eyebrow">Excel and Power BI</p>
+                <h2>Dashboard package</h2>
               </div>
               <span className="admin-section-number">03</span>
             </div>
             <p className="section-description">
-              Gera um ZIP com um CSV único de todas as inspeções e itens, manifesto das imagens,
-              pastas de fotografias identificadas pelo item do checklist e todos os PDFs
-              disponíveis.
+              Generates a ZIP containing a single CSV for all inspections and items, an image
+              manifest, photo folders identified by checklist item and all available PDFs.
             </p>
             <div className="export-contents">
-              <span>dados/inspecoes_itens.csv</span>
-              <span>dados/manifesto_imagens.csv</span>
-              <span>imagens/INSPEÇÃO/ITEM/</span>
-              <span>relatorios/</span>
+              <span>data/inspection_items.csv</span>
+              <span>data/image_manifest.csv</span>
+              <span>images/INSPECTION/ITEM/</span>
+              <span>reports/</span>
             </div>
             <button
               className="button button-primary compact-button export-button"
               disabled={exporting}
               onClick={() => void exportDashboard()}
             >
-              {exporting ? 'Preparando pacote…' : 'Gerar pacote completo (.zip)'}
+              {exporting ? 'Preparing package…' : 'Generate full package (.zip)'}
             </button>
             {exportSummary && <div className="notice notice-success">{exportSummary}</div>}
+          </section>
+
+          <section className="admin-section">
+            <div className="admin-section-heading">
+              <div>
+                <p className="eyebrow">Inspection management</p>
+                <h2>Delete inspections</h2>
+              </div>
+              <span className="admin-section-number">04</span>
+            </div>
+            <p className="section-description">
+              Permanently delete draft or completed inspections, including their checklist, photos
+              and generated report.
+            </p>
+            <div className="report-library-tools">
+              <label>
+                Search inspections
+                <input
+                  type="search"
+                  placeholder="Code, area, inspector or status"
+                  value={inspectionSearch}
+                  onChange={(event) => setInspectionSearch(event.target.value)}
+                />
+              </label>
+              <span>{filteredInspections.length} inspection(s)</span>
+            </div>
+            <div className="admin-report-list">
+              {filteredInspections.map((inspection) => (
+                <article className="admin-report-row" key={inspection.id}>
+                  <div>
+                    <strong>{inspection.code}</strong>
+                    <span>
+                      {inspection.areaCode} · {inspection.areaName}
+                    </span>
+                  </div>
+                  <div>
+                    <span>Inspector</span>
+                    <strong>{inspection.inspectorName}</strong>
+                  </div>
+                  <time>{dateLabel(inspection)}</time>
+                  <div className="admin-report-actions">
+                    <span className={`status-chip status-${inspection.status}`}>
+                      {inspectionStatusLabels[inspection.status]}
+                    </span>
+                    <Link
+                      className="button button-secondary compact-button"
+                      to={`/inspections/${inspection.id}`}
+                    >
+                      View
+                    </Link>
+                    <button
+                      className="button button-outline compact-button"
+                      disabled={deletingInspection === inspection.id}
+                      onClick={() => void removeInspection(inspection)}
+                    >
+                      {deletingInspection === inspection.id ? 'Deleting…' : 'Delete'}
+                    </button>
+                  </div>
+                </article>
+              ))}
+              {filteredInspections.length === 0 && (
+                <div className="empty-state">No inspections match your search.</div>
+              )}
+            </div>
           </section>
         </>
       )}

@@ -29,18 +29,18 @@ const PAGE = {
 };
 
 const STATUS: Record<string, { label: string; color: string; background: string }> = {
-  not_started: { label: 'Pendente', color: COLORS.muted, background: '#eef1f2' },
-  approved: { label: 'Aprovado', color: COLORS.greenDark, background: COLORS.greenSoft },
+  not_started: { label: 'Pending', color: COLORS.muted, background: '#eef1f2' },
+  approved: { label: 'Approved', color: COLORS.greenDark, background: COLORS.greenSoft },
   partially_approved: {
-    label: 'Aprovado parcialmente',
+    label: 'Partially approved',
     color: COLORS.amber,
     background: COLORS.amberSoft,
   },
-  rejected: { label: 'Reprovado', color: COLORS.red, background: COLORS.redSoft },
-  not_applicable: { label: 'Não aplicável', color: COLORS.blue, background: COLORS.blueSoft },
+  rejected: { label: 'Rejected', color: COLORS.red, background: COLORS.redSoft },
+  not_applicable: { label: 'Not applicable', color: COLORS.blue, background: COLORS.blueSoft },
 };
 
-function text(value: unknown, fallback = 'Não informado') {
+function text(value: unknown, fallback = 'Not provided') {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
 
@@ -62,8 +62,8 @@ function timestampDate(value: unknown) {
 
 function formatInspectionDate(value: unknown) {
   const date = timestampDate(value);
-  if (!date) return 'Não informada';
-  return new Intl.DateTimeFormat('pt-BR', {
+  if (!date) return 'Not provided';
+  return new Intl.DateTimeFormat('en', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -72,7 +72,7 @@ function formatInspectionDate(value: unknown) {
 }
 
 function formatGeneratedAt(date: Date) {
-  return new Intl.DateTimeFormat('pt-BR', {
+  return new Intl.DateTimeFormat('en', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -86,7 +86,7 @@ function formatGeneratedAt(date: Date) {
 function statusInfo(status: unknown) {
   return (
     STATUS[String(status)] || {
-      label: text(status, 'Não informado'),
+      label: text(status, 'Not provided'),
       color: COLORS.muted,
       background: '#eef1f2',
     }
@@ -106,9 +106,9 @@ export async function createInspectionPdf(
       margin: 0,
       bufferPages: true,
       info: {
-        Title: `Relatório de Inspeção - ${text(inspection.code, 'ACC Cert')}`,
-        Author: 'ACC Cert',
-        Subject: 'Relatório técnico de inspeção e certificação de área',
+        Title: `Inspection Report - ${text(inspection.code, 'AC Certificate')}`,
+        Author: 'AC Certificate',
+        Subject: 'Technical inspection and area certification report',
       },
     });
     const chunks: Buffer[] = [];
@@ -125,17 +125,17 @@ export async function createInspectionPdf(
         .font('Helvetica-Bold')
         .fontSize(15)
         .fillColor(COLORS.white)
-        .text('ACC CERT', PAGE.left, 18, { width: 180 });
+        .text('AC CERTIFICATE', PAGE.left, 18, { width: 180 });
       document
         .font('Helvetica')
         .fontSize(7.5)
         .fillColor('#d8eee2')
-        .text('INSPEÇÃO E CERTIFICAÇÃO DE ÁREAS', PAGE.left, 39, { width: 240 });
+        .text('AREA INSPECTION AND CERTIFICATION', PAGE.left, 39, { width: 240 });
       document
         .font('Helvetica-Bold')
         .fontSize(9)
         .fillColor(COLORS.white)
-        .text(text(inspection.code, 'RELATÓRIO TÉCNICO'), 320, 25, {
+        .text(text(inspection.code, 'TECHNICAL REPORT'), 320, 25, {
           width: 235,
           align: 'right',
         });
@@ -159,7 +159,7 @@ export async function createInspectionPdf(
           .font('Helvetica-Bold')
           .fontSize(8)
           .fillColor(COLORS.greenDark)
-          .text(`${sectionContinuation.toUpperCase()} - CONTINUAÇÃO`, PAGE.left, document.y, {
+          .text(`${sectionContinuation.toUpperCase()} - CONTINUED`, PAGE.left, document.y, {
             characterSpacing: 0.7,
           });
         document.y += 20;
@@ -265,7 +265,7 @@ export async function createInspectionPdf(
         .font('Helvetica')
         .fontSize(7.5)
         .fillColor(COLORS.ink)
-        .text(text(photo.caption, 'Evidência fotográfica sem legenda'), x + 9, y + 131, {
+        .text(text(photo.caption, 'Photo evidence without a caption'), x + 9, y + 131, {
           width: width - 18,
           height: 21,
           ellipsis: true,
@@ -296,7 +296,7 @@ export async function createInspectionPdf(
       const cardWidth = PAGE.width;
       const innerWidth = cardWidth - 24;
       const description = text(item.description || item.title);
-      const instruction = text(item.verificationInstruction, 'Não especificada');
+      const instruction = text(item.verificationInstruction, 'Not specified');
       const comment = text(item.comment);
       const recommendation = text(item.recommendation);
       const descriptionHeight = labeledTextHeight(description, innerWidth);
@@ -307,7 +307,7 @@ export async function createInspectionPdf(
       const notesHeight = Math.max(54, Math.max(commentHeight, recommendationHeight) + 30);
       const height = 42 + 25 + descriptionHeight + 24 + instructionHeight + 39 + notesHeight + 14;
 
-      ensureSpace(Math.min(height, 620), 'Checklist de inspeção');
+      ensureSpace(Math.min(height, 620), 'Inspection checklist');
       const y = document.y;
       const info = statusInfo(item.status);
       document
@@ -340,7 +340,7 @@ export async function createInspectionPdf(
         .font('Helvetica-Bold')
         .fontSize(6.5)
         .fillColor(COLORS.muted)
-        .text('DESCRIÇÃO DO ITEM', PAGE.left + 12, cursor, { characterSpacing: 0.45 });
+        .text('ITEM DESCRIPTION', PAGE.left + 12, cursor, { characterSpacing: 0.45 });
       cursor += 13;
       document
         .font('Helvetica')
@@ -359,7 +359,7 @@ export async function createInspectionPdf(
         .font('Helvetica-Bold')
         .fontSize(6.5)
         .fillColor(COLORS.muted)
-        .text('INSTRUÇÃO DE VERIFICAÇÃO', PAGE.left + 12, cursor, { characterSpacing: 0.45 });
+        .text('VERIFICATION INSTRUCTION', PAGE.left + 12, cursor, { characterSpacing: 0.45 });
       cursor += 13;
       document
         .font('Helvetica')
@@ -378,7 +378,7 @@ export async function createInspectionPdf(
         .font('Helvetica-Bold')
         .fontSize(6.5)
         .fillColor(COLORS.muted)
-        .text('COMENTÁRIO', PAGE.left + 20, cursor + 9, { characterSpacing: 0.45 });
+        .text('COMMENT', PAGE.left + 20, cursor + 9, { characterSpacing: 0.45 });
       document
         .font('Helvetica')
         .fontSize(8.5)
@@ -388,7 +388,7 @@ export async function createInspectionPdf(
         .font('Helvetica-Bold')
         .fontSize(6.5)
         .fillColor(COLORS.muted)
-        .text('RECOMENDAÇÃO', PAGE.left + 32 + columnWidth, cursor + 9, {
+        .text('RECOMMENDATION', PAGE.left + 32 + columnWidth, cursor + 9, {
           characterSpacing: 0.45,
         });
       document
@@ -406,34 +406,28 @@ export async function createInspectionPdf(
       .font('Helvetica-Bold')
       .fontSize(20)
       .fillColor(COLORS.ink)
-      .text('Relatório técnico de inspeção', PAGE.left, document.y, { width: PAGE.width });
+      .text('Technical inspection report', PAGE.left, document.y, { width: PAGE.width });
     document.y += 32;
 
     const y1 = document.y;
-    field(PAGE.left, y1, 331, 'Código da inspeção', inspection.code);
+    field(PAGE.left, y1, 331, 'Inspection code', inspection.code);
     field(
       PAGE.left + 340,
       y1,
       175,
-      'Data da inspeção',
+      'Inspection date',
       formatInspectionDate(inspection.inspectionDate),
       {
         highlighted: true,
       },
     );
     const y2 = y1 + 58;
-    field(
-      PAGE.left,
-      y2,
-      253,
-      'Projeto / obra',
-      inspection.projectSnapshot?.name || inspection.projectId,
-    );
+    field(PAGE.left, y2, 253, 'Project', inspection.projectSnapshot?.name || inspection.projectId);
     field(
       PAGE.left + 262,
       y2,
       253,
-      'Checklist aplicado',
+      'Applied checklist',
       inspection.checklistTemplateCode || inspection.checklistTemplateId,
     );
     const y3 = y2 + 58;
@@ -441,21 +435,29 @@ export async function createInspectionPdf(
       PAGE.left,
       y3,
       PAGE.width,
-      'Área inspecionada',
+      'Inspected area',
       `${text(inspection.areaSnapshot?.code || inspection.areaCode || inspection.areaId, '')} - ${text(inspection.areaSnapshot?.name || inspection.areaName, '')}`.replace(
         /^ - | - $/g,
         '',
       ),
     );
     const y4 = y3 + 58;
-    field(PAGE.left, y4, 253, 'Localização / convés', inspection.areaLocation);
-    field(PAGE.left + 262, y4, 253, 'Status do documento', 'Inspeção concluída');
+    field(PAGE.left, y4, 253, 'Location / deck', inspection.areaLocation);
+    field(PAGE.left + 262, y4, 253, 'Document status', 'Inspection completed');
     const y5 = y4 + 58;
-    field(PAGE.left, y5, 253, 'Inspetor responsável', inspection.inspectorName);
-    field(PAGE.left + 262, y5, 253, 'E-mail do inspetor', inspection.inspectorEmail);
-    document.y = y5 + 65;
+    field(PAGE.left, y5, 253, 'Responsible inspector', inspection.inspectorName);
+    field(PAGE.left + 262, y5, 253, 'Inspector email', inspection.inspectorEmail);
+    const y6 = y5 + 58;
+    field(
+      PAGE.left,
+      y6,
+      PAGE.width,
+      'Co-responsible person',
+      text(inspection.coResponsibleName, 'Not assigned'),
+    );
+    document.y = y6 + 65;
 
-    sectionTitle('Resumo dos resultados', 'Consolidação dos itens registrados no checklist');
+    sectionTitle('Results summary', 'Summary of items recorded in the checklist');
     const cardGap = 7;
     const cardWidth = (PAGE.width - cardGap * 4) / 5;
     const summaryY = document.y;
@@ -464,7 +466,7 @@ export async function createInspectionPdf(
       summaryY,
       cardWidth,
       Number(inspection.summary?.approved || 0),
-      'Aprovados',
+      'Approved',
       COLORS.greenDark,
       COLORS.greenSoft,
     );
@@ -473,7 +475,7 @@ export async function createInspectionPdf(
       summaryY,
       cardWidth,
       Number(inspection.summary?.partiallyApproved || 0),
-      'Parciais',
+      'Partial',
       COLORS.amber,
       COLORS.amberSoft,
     );
@@ -482,7 +484,7 @@ export async function createInspectionPdf(
       summaryY,
       cardWidth,
       Number(inspection.summary?.rejected || 0),
-      'Reprovados',
+      'Rejected',
       COLORS.red,
       COLORS.redSoft,
     );
@@ -491,7 +493,7 @@ export async function createInspectionPdf(
       summaryY,
       cardWidth,
       Number(inspection.summary?.notApplicable || 0),
-      'Não aplicáveis',
+      'Not applicable',
       COLORS.blue,
       COLORS.blueSoft,
     );
@@ -509,40 +511,35 @@ export async function createInspectionPdf(
     const generalPhotos = photos.filter((photo) => !photo.itemId);
     if (generalPhotos.length) {
       sectionTitle(
-        'Evidências gerais da área',
-        `${generalPhotos.length} fotografia(s) vinculada(s) à inspeção`,
+        'General area evidence',
+        `${generalPhotos.length} photo(s) linked to the inspection`,
       );
-      photoRows(generalPhotos, 'Evidências gerais da área');
+      photoRows(generalPhotos, 'General area evidence');
     }
 
     sectionTitle(
-      'Checklist de inspeção',
-      `${items.length} ${items.length === 1 ? 'item avaliado' : 'itens avaliados'} individualmente`,
+      'Inspection checklist',
+      `${items.length} ${items.length === 1 ? 'item evaluated' : 'items evaluated'} individually`,
     );
     for (const item of items) {
       itemDetails(item);
       const itemPhotos = photos.filter((photo) => photo.itemId === item.id);
       if (itemPhotos.length) {
-        ensureSpace(26, 'Checklist de inspeção');
+        ensureSpace(26, 'Inspection checklist');
         document
           .font('Helvetica-Bold')
           .fontSize(7)
           .fillColor(COLORS.greenDark)
-          .text(
-            `EVIDÊNCIAS FOTOGRÁFICAS DO ITEM (${itemPhotos.length})`,
-            PAGE.left + 5,
-            document.y,
-            {
-              characterSpacing: 0.45,
-            },
-          );
+          .text(`ITEM PHOTO EVIDENCE (${itemPhotos.length})`, PAGE.left + 5, document.y, {
+            characterSpacing: 0.45,
+          });
         document.y += 17;
-        photoRows(itemPhotos, `Evidências do item ${text(item.code, '')}`);
+        photoRows(itemPhotos, `Evidence for item ${text(item.code, '')}`);
       }
       document.y += 4;
     }
 
-    ensureSpace(76, 'Encerramento');
+    ensureSpace(76, 'Closing');
     const closingY = document.y + 4;
     document
       .roundedRect(PAGE.left, closingY, PAGE.width, 60, 5)
@@ -551,13 +548,13 @@ export async function createInspectionPdf(
       .font('Helvetica-Bold')
       .fontSize(7)
       .fillColor(COLORS.muted)
-      .text('REGISTRO DO DOCUMENTO', PAGE.left + 12, closingY + 10, { characterSpacing: 0.5 });
+      .text('DOCUMENT RECORD', PAGE.left + 12, closingY + 10, { characterSpacing: 0.5 });
     document
       .font('Helvetica')
       .fontSize(8)
       .fillColor(COLORS.ink)
       .text(
-        `Gerado automaticamente pelo ACC Cert em ${formatGeneratedAt(generatedAt)}.`,
+        `Generated automatically by AC Certificate on ${formatGeneratedAt(generatedAt)}.`,
         PAGE.left + 12,
         closingY + 26,
         {
@@ -569,7 +566,7 @@ export async function createInspectionPdf(
       .fontSize(7.5)
       .fillColor(COLORS.muted)
       .text(
-        'Este relatório consolida os dados e as evidências registrados eletronicamente na inspeção.',
+        'This report consolidates the data and evidence recorded electronically during the inspection.',
         PAGE.left + 12,
         closingY + 41,
         {
@@ -590,12 +587,12 @@ export async function createInspectionPdf(
         .font('Helvetica')
         .fontSize(7)
         .fillColor(COLORS.muted)
-        .text('ACC Cert - Relatório técnico de inspeção', PAGE.left, footerY, { width: 290 });
+        .text('AC Certificate - Technical inspection report', PAGE.left, footerY, { width: 290 });
       document
         .font('Helvetica-Bold')
         .fontSize(7)
         .fillColor(COLORS.muted)
-        .text(`Página ${page + 1} / ${range.count}`, 390, footerY, { width: 165, align: 'right' });
+        .text(`Page ${page + 1} / ${range.count}`, 390, footerY, { width: 165, align: 'right' });
     }
     document.end();
   });
@@ -617,6 +614,7 @@ export const generateInspectionReport = onDocumentUpdated(
     const inspectionRef = adminDb.doc(`inspections/${inspectionId}`);
     await inspectionRef.update({ reportStatus: 'processing', reportError: FieldValue.delete() });
 
+    let storagePath = '';
     try {
       const [itemsSnapshot, photosSnapshot] = await Promise.all([
         inspectionRef.collection('items').orderBy('order').get(),
@@ -631,7 +629,7 @@ export const generateInspectionReport = onDocumentUpdated(
         }),
       );
       const pdf = await createInspectionPdf(after, items, photos);
-      const storagePath = `inspections/${inspectionId}/reports/relatorio-${inspectionId}.pdf`;
+      storagePath = `inspections/${inspectionId}/reports/report-${inspectionId}.pdf`;
       await adminStorage
         .bucket()
         .file(storagePath)
@@ -657,7 +655,14 @@ export const generateInspectionReport = onDocumentUpdated(
         createdAt: FieldValue.serverTimestamp(),
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Falha desconhecida';
+      const currentInspection = await inspectionRef.get();
+      if (!currentInspection.exists) {
+        if (storagePath) {
+          await adminStorage.bucket().file(storagePath).delete({ ignoreNotFound: true });
+        }
+        return;
+      }
+      const message = error instanceof Error ? error.message : 'Unknown error';
       await inspectionRef.update({ reportStatus: 'error', reportError: message });
       throw error;
     }

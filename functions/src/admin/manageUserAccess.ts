@@ -32,16 +32,16 @@ export const manageUserAccess = onCall<ManageUserAccessRequest>(
       .slice(0, 30);
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      throw new HttpsError('invalid-argument', 'Informe um e-mail válido.');
+      throw new HttpsError('invalid-argument', 'Enter a valid email address.');
     }
     if (name.length < 2 || name.length > 120) {
-      throw new HttpsError('invalid-argument', 'Informe o nome do usuário.');
+      throw new HttpsError('invalid-argument', 'Enter the user name.');
     }
     if (!['admin', 'inspector', 'viewer'].includes(role)) {
-      throw new HttpsError('invalid-argument', 'Perfil de acesso inválido.');
+      throw new HttpsError('invalid-argument', 'Invalid access role.');
     }
     if (projectIds.length === 0) {
-      throw new HttpsError('invalid-argument', 'Associe o usuário a pelo menos uma obra.');
+      throw new HttpsError('invalid-argument', 'Assign the user to at least one project.');
     }
 
     const auth = getAuth();
@@ -58,7 +58,7 @@ export const manageUserAccess = onCall<ManageUserAccessRequest>(
     if (authUser.uid === administrator.uid && (!active || role !== 'admin')) {
       throw new HttpsError(
         'failed-precondition',
-        'O administrador não pode remover o próprio acesso.',
+        'An administrator cannot remove their own access.',
       );
     }
 

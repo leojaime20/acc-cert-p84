@@ -92,7 +92,11 @@ service cloud.firestore {
         && request.resource.data.inspectorEmail == resource.data.inspectorEmail
         && request.resource.data.checklistTemplateId == resource.data.checklistTemplateId
         && request.resource.data.checklistTemplateVersion == resource.data.checklistTemplateVersion
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['summary', 'updatedAt'])
+        && (!request.resource.data.keys().hasAll(['coResponsibleName'])
+          || (request.resource.data.coResponsibleName is string
+            && request.resource.data.coResponsibleName.size() <= 120))
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['summary', 'coResponsibleName', 'updatedAt'])
         && validSummary(request.resource.data.summary, resource.data.summary)
       );
       allow delete: if false;

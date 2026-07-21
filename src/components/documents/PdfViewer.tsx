@@ -12,15 +12,15 @@ interface PdfViewerProps {
 function readerErrorMessage(error: unknown) {
   const name = error instanceof Error ? error.name : '';
   if (name === 'PasswordException') {
-    return 'Este PDF é protegido por senha. Abra-o no leitor do dispositivo.';
+    return 'This PDF is password protected. Open it in your device reader.';
   }
   if (name === 'InvalidPDFException') {
-    return 'O arquivo PDF parece estar inválido ou corrompido.';
+    return 'The PDF file appears to be invalid or corrupted.';
   }
   if (name === 'MissingPDFException' || name === 'UnexpectedResponseException') {
-    return 'O arquivo não pôde ser baixado do armazenamento.';
+    return 'The file could not be downloaded from storage.';
   }
-  return 'O leitor não conseguiu carregar este PDF.';
+  return 'The reader could not load this PDF.';
 }
 
 export function PdfViewer({ url, title, allowDownload, loadBytes }: PdfViewerProps) {
@@ -94,7 +94,7 @@ export function PdfViewer({ url, title, allowDownload, loadBytes }: PdfViewerPro
         const viewport = page.getViewport({ scale: cssScale * pixelRatio });
         const canvas = canvasRef.current;
         const context = canvas.getContext('2d');
-        if (!context) throw new Error('Canvas indisponível.');
+        if (!context) throw new Error('Canvas unavailable.');
 
         canvas.width = Math.floor(viewport.width);
         canvas.height = Math.floor(viewport.height);
@@ -109,7 +109,7 @@ export function PdfViewer({ url, title, allowDownload, loadBytes }: PdfViewerPro
           active &&
           !(renderError instanceof Error && renderError.name === 'RenderingCancelledException')
         ) {
-          setError('Não foi possível exibir esta página.');
+          setError('Unable to display this page.');
         }
       })
       .finally(() => {
@@ -131,13 +131,13 @@ export function PdfViewer({ url, title, allowDownload, loadBytes }: PdfViewerPro
 
   return (
     <div className="pdf-viewer" ref={containerRef}>
-      <div className="pdf-toolbar" aria-label="Controles do leitor de PDF">
+      <div className="pdf-toolbar" aria-label="PDF reader controls">
         <div className="pdf-page-controls">
           <button
             className="button button-outline compact-button"
             disabled={!pdf || pageNumber <= 1}
             onClick={() => setPageNumber((current) => Math.max(1, current - 1))}
-            aria-label="Página anterior"
+            aria-label="Previous page"
           >
             ←
           </button>
@@ -148,7 +148,7 @@ export function PdfViewer({ url, title, allowDownload, loadBytes }: PdfViewerPro
             className="button button-outline compact-button"
             disabled={!pdf || pageNumber >= pdf.numPages}
             onClick={() => setPageNumber((current) => Math.min(pdf?.numPages || 1, current + 1))}
-            aria-label="Próxima página"
+            aria-label="Next page"
           >
             →
           </button>
@@ -158,7 +158,7 @@ export function PdfViewer({ url, title, allowDownload, loadBytes }: PdfViewerPro
             className="button button-outline compact-button"
             disabled={!pdf || zoom <= 0.6}
             onClick={() => setZoom((current) => Math.max(0.6, current - 0.2))}
-            aria-label="Diminuir zoom"
+            aria-label="Zoom out"
           >
             −
           </button>
@@ -167,7 +167,7 @@ export function PdfViewer({ url, title, allowDownload, loadBytes }: PdfViewerPro
             className="button button-outline compact-button"
             disabled={!pdf || zoom >= 2.4}
             onClick={() => setZoom((current) => Math.min(2.4, current + 0.2))}
-            aria-label="Aumentar zoom"
+            aria-label="Zoom in"
           >
             +
           </button>
@@ -175,7 +175,7 @@ export function PdfViewer({ url, title, allowDownload, loadBytes }: PdfViewerPro
             className="button button-outline compact-button pdf-fullscreen-button"
             onClick={() => void toggleFullscreen()}
           >
-            Tela cheia
+            Full screen
           </button>
           {allowDownload && (
             <a
@@ -185,13 +185,13 @@ export function PdfViewer({ url, title, allowDownload, loadBytes }: PdfViewerPro
               target="_blank"
               rel="noreferrer"
             >
-              Baixar
+              Download
             </a>
           )}
         </div>
       </div>
 
-      {loading && <div className="pdf-loading">Preparando o leitor…</div>}
+      {loading && <div className="pdf-loading">Preparing reader…</div>}
       {error && (
         <div className="pdf-fallback notice notice-error">
           <p>{error}</p>
@@ -201,12 +201,12 @@ export function PdfViewer({ url, title, allowDownload, loadBytes }: PdfViewerPro
             target="_blank"
             rel="noreferrer"
           >
-            Abrir no leitor do dispositivo
+            Open in device reader
           </a>
         </div>
       )}
       <div className={`pdf-canvas-stage ${rendering ? 'is-rendering' : ''}`}>
-        <canvas ref={canvasRef} aria-label={`Página ${pageNumber} de ${title}`} />
+        <canvas ref={canvasRef} aria-label={`Page ${pageNumber} of ${title}`} />
       </div>
     </div>
   );
