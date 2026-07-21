@@ -133,8 +133,24 @@ service cloud.firestore {
     }
 
     match /technicalDocuments/{documentId} {
-      allow read: if hasProject(resource.data.projectId);
+      allow read: if isAdmin() || (
+        hasProject(resource.data.projectId)
+        && resource.data.active == true
+        && resource.data.status == 'ready'
+      );
       allow create, update, delete: if isAdmin();
+
+      match /versions/{versionId} {
+        function technicalDocument() {
+          return get(/databases/$(database)/documents/technicalDocuments/$(documentId)).data;
+        }
+        allow read: if isAdmin() || (
+          hasProject(technicalDocument().projectId)
+          && technicalDocument().active == true
+          && technicalDocument().status == 'ready'
+        );
+        allow create, update, delete: if isAdmin();
+      }
     }
 
     match /auditLogs/{logId} {

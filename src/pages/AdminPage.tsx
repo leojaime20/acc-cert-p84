@@ -221,6 +221,17 @@ export function AdminPage() {
         Gerencie acessos, consulte os relatórios e prepare todos os dados para análise.
       </p>
 
+      <Link className="admin-module-link" to="/admin/documents">
+        <span className="pdf-file-mark" aria-hidden="true">
+          PDF
+        </span>
+        <span>
+          <strong>Documentos técnicos</strong>
+          <small>Publicar referências e gerenciar versões por área</small>
+        </span>
+        <span aria-hidden="true">→</span>
+      </Link>
+
       {error && <div className="notice notice-error">{error}</div>}
       {success && <div className="notice notice-success">{success}</div>}
       {loading && <p>Carregando central administrativa…</p>}

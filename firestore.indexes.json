@@ -33,6 +33,15 @@
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "inspectionDate", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "technicalDocuments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "projectId", "order": "ASCENDING" },
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

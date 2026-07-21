@@ -76,6 +76,7 @@ Usuários com perfil `admin` possuem uma central exclusiva para:
 - reenviar a mensagem de definição de senha e desativar acessos;
 - pesquisar e abrir todos os relatórios PDF gerados;
 - gerar um pacote ZIP consolidado para Excel e Power BI.
+- publicar documentos técnicos em PDF, associá-los a uma ou várias áreas e preservar versões.
 
 O pacote contém `dados/inspecoes_itens.csv`, com uma linha por item de checklist,
 `dados/manifesto_imagens.csv`, as fotografias organizadas em
@@ -87,6 +88,12 @@ O frontend é publicado pelo workflow `.github/workflows/deploy-pages.yml`. As v
 
 O backend é publicado separadamente com `firebase deploy --only firestore,storage,functions`. Cloud Functions pode exigir que o projeto Firebase esteja no plano de faturamento apropriado.
 
+## Documentos de referência
+
+Durante uma inspeção, o botão flutuante **Documentos** abre a biblioteca de PDFs aplicável à área atual. O inspetor pode pesquisar por título, descrição ou arquivo, filtrar por categoria e usar o leitor responsivo integrado. Alterações pendentes do checklist são salvas antes da navegação.
+
+Administradores gerenciam a biblioteca em `/admin/documents`. O upload aceita PDFs de até 50 MB, valida extensão, tipo e assinatura do arquivo e permite associação com áreas específicas ou com todo o projeto.
+
 ## Situação funcional
 
-Esta entrega cobre a fundação prevista na especificação: estrutura React/TypeScript, autenticação, rotas protegidas, listagem responsiva de áreas, modelos de dados, validações básicas, regras, Functions de finalização/relatório, carga inicial e deploy. A criação e o preenchimento de inspeções, fotografias, documentos e telas administrativas entram nas próximas entregas incrementais.
+O sistema cobre autenticação, obras e áreas, criação e preenchimento de inspeções, evidências fotográficas, relatórios profissionais, administração de usuários, exportação para dashboards e documentos técnicos de referência com histórico de versões.

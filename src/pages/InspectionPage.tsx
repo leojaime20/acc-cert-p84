@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChecklistItemEditor } from '../components/inspection/ChecklistItemEditor';
 import { PhotoUploader } from '../components/inspection/PhotoUploader';
 import { useAuth } from '../features/auth/useAuth';
@@ -9,6 +9,7 @@ import {
   listInspectionItems,
 } from '../services/inspectionService';
 import { getStorageDownloadUrl, listInspectionPhotos } from '../services/photoService';
+import { listTechnicalDocumentsForArea } from '../services/technicalDocumentService';
 import type {
   Inspection,
   InspectionItem,
@@ -32,7 +33,9 @@ const reportLabels = {
 
 export function InspectionPage() {
   const { inspectionId } = useParams();
+  const navigate = useNavigate();
   const { profile } = useAuth();
+  const pendingItemFlushes = useRef(new Map<string, () => Promise<void>>());
   const [inspection, setInspection] = useState<Inspection | null>(null);
   const [items, setItems] = useState<InspectionItem[]>([]);
   const [photos, setPhotos] = useState<InspectionPhoto[]>([]);
@@ -43,6 +46,8 @@ export function InspectionPage() {
   const [finalizing, setFinalizing] = useState(false);
   const [pending, setPending] = useState<string[]>([]);
   const [reportUrl, setReportUrl] = useState('');
+  const [documentCount, setDocumentCount] = useState(0);
+  const [openingDocuments, setOpeningDocuments] = useState(false);
 
   const refreshInspection = useCallback(async () => {
     if (!inspectionId) return;
@@ -66,6 +71,13 @@ export function InspectionPage() {
       .then((nextInspection) => {
         if (!active) return;
         setInspection(nextInspection);
+        void listTechnicalDocumentsForArea(nextInspection.projectId, nextInspection.areaId)
+          .then((documents) => {
+            if (active) setDocumentCount(documents.length);
+          })
+          .catch(() => {
+            if (active) setDocumentCount(0);
+          });
         if (nextInspection.reportStoragePath) {
           void getStorageDownloadUrl(nextInspection.reportStoragePath)
             .then((url) => {
@@ -140,6 +152,27 @@ export function InspectionPage() {
     setPhotos((current) => current.filter((photo) => photo.id !== photoId));
   }
 
+  const registerPendingFlush = useCallback(
+    (itemId: string, flush: (() => Promise<void>) | null) => {
+      if (flush) pendingItemFlushes.current.set(itemId, flush);
+      else pendingItemFlushes.current.delete(itemId);
+    },
+    [],
+  );
+
+  async function openDocuments() {
+    if (!inspectionId) return;
+    setOpeningDocuments(true);
+    setError('');
+    try {
+      await Promise.all([...pendingItemFlushes.current.values()].map((flush) => flush()));
+      navigate(`/inspections/${inspectionId}/documents`);
+    } catch {
+      setError('Não foi possível salvar as últimas alterações antes de abrir os documentos.');
+      setOpeningDocuments(false);
+    }
+  }
+
   async function handleFinalize() {
     if (!inspectionId) return;
     setFinalizing(true);
@@ -159,7 +192,20 @@ export function InspectionPage() {
   return (
     <section className="inspection-page">
       <p className="eyebrow">Inspeção</p>
-      <h1>{inspection?.code || (loading ? 'Carregando…' : inspectionId)}</h1>
+      <div className="inspection-title-row">
+        <h1>{inspection?.code || (loading ? 'Carregando…' : inspectionId)}</h1>
+        {inspection && (
+          <button
+            className="button inspection-documents-button"
+            disabled={openingDocuments}
+            onClick={() => void openDocuments()}
+          >
+            <span aria-hidden="true">PDF</span>
+            <strong>{openingDocuments ? 'Salvando…' : 'Documentos'}</strong>
+            {documentCount > 0 && <small>{documentCount}</small>}
+          </button>
+        )}
+      </div>
       {error && <div className="notice notice-error">{error}</div>}
       {inspection && profile && (
         <>
@@ -242,6 +288,7 @@ export function InspectionPage() {
                 onSaved={updateLocalItem}
                 onPhotoAdded={addPhoto}
                 onPhotoRemoved={removePhoto}
+                onRegisterFlush={registerPendingFlush}
               />
             ))}
           </div>

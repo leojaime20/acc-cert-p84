@@ -33,6 +33,19 @@ service firebase.storage {
         && inspection(inspectionId).status in ['draft', 'reopened'];
     }
 
+    function technicalDocument(documentId) {
+      return firestore.get(/databases/(default)/documents/technicalDocuments/$(documentId)).data;
+    }
+
+    function canReadTechnicalDocument(projectId, documentId) {
+      return isAdmin() || (
+        hasProject(projectId)
+        && technicalDocument(documentId).projectId == projectId
+        && technicalDocument(documentId).active == true
+        && technicalDocument(documentId).status == 'ready'
+      );
+    }
+
     function validImage() {
       return request.resource.size <= 2 * 1024 * 1024
         && request.resource.contentType.matches('image/(jpeg|png|webp)');
@@ -68,6 +81,14 @@ service firebase.storage {
 
     match /projects/{projectId}/areas/{areaId}/documents/{documentId}/{fileName} {
       allow read: if hasProject(projectId);
+      allow create, update: if isAdmin()
+        && request.resource.size <= 50 * 1024 * 1024
+        && request.resource.contentType == 'application/pdf';
+      allow delete: if isAdmin();
+    }
+
+    match /projects/{projectId}/technicalDocuments/{documentId}/versions/{fileName} {
+      allow read: if canReadTechnicalDocument(projectId, documentId);
       allow create, update: if isAdmin()
         && request.resource.size <= 50 * 1024 * 1024
         && request.resource.contentType == 'application/pdf';

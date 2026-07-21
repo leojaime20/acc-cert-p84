@@ -26,6 +26,7 @@ interface ChecklistItemEditorProps {
   onSaved: (item: InspectionItem, summary: InspectionSummary) => void;
   onPhotoAdded: (photo: InspectionPhoto) => void;
   onPhotoRemoved: (photoId: string) => void;
+  onRegisterFlush?: (itemId: string, flush: (() => Promise<void>) | null) => void;
 }
 
 export function ChecklistItemEditor({
@@ -37,6 +38,7 @@ export function ChecklistItemEditor({
   onSaved,
   onPhotoAdded,
   onPhotoRemoved,
+  onRegisterFlush,
 }: ChecklistItemEditorProps) {
   const [status, setStatus] = useState(item.status);
   const [comment, setComment] = useState(item.comment || '');
@@ -79,6 +81,17 @@ export function ChecklistItemEditor({
     }, 800);
     return () => window.clearTimeout(timer);
   }, [comment, editable, recommendation, save, status]);
+
+  const flushPendingText = useCallback(async () => {
+    if (!textChanged.current || !editable) return;
+    textChanged.current = false;
+    await save(status, comment, recommendation);
+  }, [comment, editable, recommendation, save, status]);
+
+  useEffect(() => {
+    onRegisterFlush?.(item.id, flushPendingText);
+    return () => onRegisterFlush?.(item.id, null);
+  }, [flushPendingText, item.id, onRegisterFlush]);
 
   const statusLabel = statuses.find((option) => option.value === status)?.short || 'Pendente';
   const needsComment = status === 'rejected' || status === 'partially_approved';

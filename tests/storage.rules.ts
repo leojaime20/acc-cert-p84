@@ -45,6 +45,16 @@ async function seedData(environment: RulesTestEnvironment) {
         inspectorId: 'owner',
         status: 'completed',
       }),
+      setDoc(doc(firestore, 'technicalDocuments/ready-document'), {
+        projectId: 'p84',
+        active: true,
+        status: 'ready',
+      }),
+      setDoc(doc(firestore, 'technicalDocuments/inactive-document'), {
+        projectId: 'p84',
+        active: false,
+        status: 'ready',
+      }),
     ]);
     await uploadBytes(
       ref(context.storage(), 'adminExports/admin/dashboard.zip'),
@@ -89,6 +99,38 @@ async function main() {
       { contentType: 'image/jpeg' },
     ),
   );
+
+  const pdf = new TextEncoder().encode('%PDF-1.7\n%%EOF');
+  const technicalDocumentPath =
+    'projects/p84/technicalDocuments/ready-document/versions/version-1.pdf';
+  await assertSucceeds(
+    uploadBytes(ref(adminStorage, technicalDocumentPath), pdf, { contentType: 'application/pdf' }),
+  );
+  await assertSucceeds(getBytes(ref(ownerStorage, technicalDocumentPath)));
+  await assertFails(getBytes(ref(outsiderStorage, technicalDocumentPath)));
+  await assertFails(
+    uploadBytes(
+      ref(ownerStorage, 'projects/p84/technicalDocuments/ready-document/versions/owner.pdf'),
+      pdf,
+      { contentType: 'application/pdf' },
+    ),
+  );
+  await assertFails(
+    uploadBytes(
+      ref(adminStorage, 'projects/p84/technicalDocuments/ready-document/versions/fake.pdf'),
+      pdf,
+      { contentType: 'text/plain' },
+    ),
+  );
+  const inactiveDocumentPath =
+    'projects/p84/technicalDocuments/inactive-document/versions/version-1.pdf';
+  await testEnvironment.withSecurityRulesDisabled(async (context) => {
+    await uploadBytes(ref(context.storage(), inactiveDocumentPath), pdf, {
+      contentType: 'application/pdf',
+    });
+  });
+  await assertFails(getBytes(ref(ownerStorage, inactiveDocumentPath)));
+  await assertSucceeds(getBytes(ref(adminStorage, inactiveDocumentPath)));
   await assertFails(
     uploadBytes(
       ref(ownerStorage, 'inspections/completed-inspection/general/completed.jpg'),
@@ -120,7 +162,7 @@ async function main() {
     }),
   );
 
-  console.log('Storage rules: 14 verificações aprovadas.');
+  console.log('Storage rules: 21 verificações aprovadas.');
 }
 
 try {
