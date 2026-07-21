@@ -88,6 +88,13 @@ O frontend é publicado pelo workflow `.github/workflows/deploy-pages.yml`. As v
 
 O backend é publicado separadamente com `firebase deploy --only firestore,storage,functions`. Cloud Functions pode exigir que o projeto Firebase esteja no plano de faturamento apropriado.
 
+O leitor integrado de PDFs também depende da configuração CORS versionada em
+`storage.cors.json`. Para reaplicá-la ao bucket de produção, execute:
+
+```bash
+gcloud storage buckets update gs://acc-cert-p84.firebasestorage.app --cors-file=storage.cors.json
+```
+
 ## Documentos de referência
 
 Durante uma inspeção, o botão flutuante **Documentos** abre a biblioteca de PDFs aplicável à área atual. O inspetor pode pesquisar por título, descrição ou arquivo, filtrar por categoria e usar o leitor responsivo integrado. Alterações pendentes do checklist são salvas antes da navegação.
