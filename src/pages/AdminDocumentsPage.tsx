@@ -216,9 +216,7 @@ export function AdminDocumentsPage() {
       resetForm();
       await refreshDocuments(form.projectId);
     } catch (uploadError) {
-      setError(
-        uploadError instanceof Error ? uploadError.message : 'Unable to upload the PDF.',
-      );
+      setError(uploadError instanceof Error ? uploadError.message : 'Unable to upload the PDF.');
     } finally {
       uploadHandle.current = undefined;
       setUploading(false);
@@ -530,9 +528,7 @@ export function AdminDocumentsPage() {
                 <span>{document.fileName}</span>
                 <small>
                   Version {document.version} · {sizeLabel(document.size)} ·{' '}
-                  {document.appliesToAllAreas
-                    ? 'All areas'
-                    : `${document.areaIds.length} area(s)`}
+                  {document.appliesToAllAreas ? 'All areas' : `${document.areaIds.length} area(s)`}
                 </small>
               </div>
               <div className="document-admin-status">

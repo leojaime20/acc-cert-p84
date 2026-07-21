@@ -51,8 +51,7 @@ export const finalizeInspection = onCall<FinalizeRequest>(
         if (item.status === 'rejected') summary.rejected += 1;
         if (item.status === 'not_applicable') summary.notApplicable += 1;
         const label = item.code || `Item ${item.itemNumber || itemSnapshot.id}`;
-        if (item.required && item.status === 'not_started')
-          pending.push(`${label}: not verified`);
+        if (item.required && item.status === 'not_started') pending.push(`${label}: not verified`);
         if (['rejected', 'partially_approved'].includes(item.status) && !item.comment?.trim()) {
           pending.push(`${label}: comment is required`);
         }
@@ -68,7 +67,9 @@ export const finalizeInspection = onCall<FinalizeRequest>(
         pending.push('There are photos with pending uploads.');
       }
       if (pending.length) {
-        throw new HttpsError('failed-precondition', 'The inspection has pending items.', { pending });
+        throw new HttpsError('failed-precondition', 'The inspection has pending items.', {
+          pending,
+        });
       }
 
       transaction.update(inspectionRef, {

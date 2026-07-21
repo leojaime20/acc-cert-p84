@@ -107,7 +107,7 @@ export async function readImageDimensions(file: Blob) {
       bitmap.close();
       return dimensions;
     } catch {
-    // Safari/iOS may expose createImageBitmap without accepting all decodable formats.
+      // Safari/iOS may expose createImageBitmap without accepting all decodable formats.
     }
   }
   return dimensionsWithImageElement(file);

@@ -7,6 +7,7 @@ export function ProtectedRoute() {
 
   if (loading) return <main className="centered-page">Loading…</main>;
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
-  if (!profile?.active) return <main className="centered-page">User does not have active access.</main>;
+  if (!profile?.active)
+    return <main className="centered-page">User does not have active access.</main>;
   return <Outlet />;
 }

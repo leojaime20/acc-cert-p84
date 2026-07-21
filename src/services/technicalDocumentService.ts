@@ -87,10 +87,7 @@ export async function validateTechnicalDocumentFile(file: File) {
 
   const signature = new TextDecoder('ascii').decode(await file.slice(0, 5).arrayBuffer());
   if (signature !== '%PDF-') {
-    throw new TechnicalDocumentError(
-      'The file contents do not match a valid PDF.',
-      'signature',
-    );
+    throw new TechnicalDocumentError('The file contents do not match a valid PDF.', 'signature');
   }
 }
 

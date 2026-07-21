@@ -422,13 +422,7 @@ export async function createInspectionPdf(
       },
     );
     const y2 = y1 + 58;
-    field(
-      PAGE.left,
-      y2,
-      253,
-      'Project',
-      inspection.projectSnapshot?.name || inspection.projectId,
-    );
+    field(PAGE.left, y2, 253, 'Project', inspection.projectSnapshot?.name || inspection.projectId);
     field(
       PAGE.left + 262,
       y2,
@@ -454,7 +448,13 @@ export async function createInspectionPdf(
     field(PAGE.left, y5, 253, 'Responsible inspector', inspection.inspectorName);
     field(PAGE.left + 262, y5, 253, 'Inspector email', inspection.inspectorEmail);
     const y6 = y5 + 58;
-    field(PAGE.left, y6, PAGE.width, 'Co-responsible person', text(inspection.coResponsibleName, 'Not assigned'));
+    field(
+      PAGE.left,
+      y6,
+      PAGE.width,
+      'Co-responsible person',
+      text(inspection.coResponsibleName, 'Not assigned'),
+    );
     document.y = y6 + 65;
 
     sectionTitle('Results summary', 'Summary of items recorded in the checklist');
@@ -530,14 +530,9 @@ export async function createInspectionPdf(
           .font('Helvetica-Bold')
           .fontSize(7)
           .fillColor(COLORS.greenDark)
-          .text(
-            `ITEM PHOTO EVIDENCE (${itemPhotos.length})`,
-            PAGE.left + 5,
-            document.y,
-            {
-              characterSpacing: 0.45,
-            },
-          );
+          .text(`ITEM PHOTO EVIDENCE (${itemPhotos.length})`, PAGE.left + 5, document.y, {
+            characterSpacing: 0.45,
+          });
         document.y += 17;
         photoRows(itemPhotos, `Evidence for item ${text(item.code, '')}`);
       }

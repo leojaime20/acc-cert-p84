@@ -97,7 +97,8 @@ export function InspectionPage() {
               if (active) setReportUrl(url);
             })
             .catch(() => {
-              if (active) setReportError('The report was generated, but cannot be opened right now.');
+              if (active)
+                setReportError('The report was generated, but cannot be opened right now.');
             });
         }
       })
@@ -124,9 +125,7 @@ export function InspectionPage() {
       })
       .catch(() => {
         if (active)
-          setPhotoError(
-            'Photos could not be loaded. The remaining data is still available.',
-          );
+          setPhotoError('Photos could not be loaded. The remaining data is still available.');
       });
 
     return () => {

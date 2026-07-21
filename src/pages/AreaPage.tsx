@@ -59,8 +59,7 @@ export function AreaPage() {
       <div className="action-card">
         <h2>New inspection</h2>
         <p>
-          The area checklist will be copied into a new draft for{' '}
-          <strong>{profile?.name}</strong>.
+          The area checklist will be copied into a new draft for <strong>{profile?.name}</strong>.
         </p>
         <button
           className="button button-primary"

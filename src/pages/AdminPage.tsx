@@ -260,9 +260,7 @@ export function AdminPage() {
         <h1>Administration center</h1>
         <span className="badge">Restricted access</span>
       </div>
-      <p className="page-intro">
-        Manage access, review inspections and prepare data for analysis.
-      </p>
+      <p className="page-intro">Manage access, review inspections and prepare data for analysis.</p>
 
       <Link className="admin-module-link" to="/admin/documents">
         <span className="pdf-file-mark" aria-hidden="true">

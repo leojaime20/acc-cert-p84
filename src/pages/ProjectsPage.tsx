@@ -79,9 +79,7 @@ export function ProjectsPage() {
               <p>{area.location}</p>
             </Link>
           ))}
-          {filteredAreas.length === 0 && (
-            <div className="empty-state">No areas found.</div>
-          )}
+          {filteredAreas.length === 0 && <div className="empty-state">No areas found.</div>}
         </div>
       )}
     </section>
