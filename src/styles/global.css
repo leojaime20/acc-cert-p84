@@ -742,6 +742,88 @@ label {
   background: white;
   color: var(--ink);
 }
+.photo-queue {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.8rem;
+  border: 1px solid #c7d5ce;
+  border-radius: 0.75rem;
+  background: #f7faf8;
+}
+.photo-queue-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.photo-queue-heading > div,
+.batch-upload-progress,
+.photo-queue-summary {
+  display: grid;
+  gap: 0.25rem;
+}
+.photo-queue-heading small,
+.photo-queue-heading > span,
+.batch-upload-progress > small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.photo-queue-heading > span {
+  flex: none;
+  padding: 0.25rem 0.45rem;
+  border-radius: 999px;
+  background: white;
+  font-weight: 750;
+}
+.queued-photo-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+.queued-photo-card {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid #d7e0db;
+  border-radius: 0.65rem;
+  background: white;
+}
+.queued-photo-card.queue-uploading {
+  border-color: var(--brand-green);
+}
+.queued-photo-card.queue-failed {
+  border-color: #d59898;
+  background: #fffafa;
+}
+.queued-photo-card > img {
+  width: 100%;
+  height: 100%;
+  min-height: 10rem;
+  object-fit: cover;
+}
+.queued-photo-card figcaption {
+  display: grid;
+  align-content: start;
+  gap: 0.65rem;
+  padding: 0.7rem;
+}
+.queued-photo-card label {
+  font-size: 0.75rem;
+}
+.queued-photo-remove {
+  justify-self: start;
+}
+.photo-batch-button {
+  width: 100%;
+  min-height: 3.15rem;
+}
+.photo-queue-summary {
+  margin-top: 1rem;
+}
+.photo-queue-summary span {
+  font-size: 0.82rem;
+}
 .photo-preview {
   display: grid;
   gap: 0.75rem;
@@ -1438,6 +1520,13 @@ label {
   .photo-source-actions {
     grid-template-columns: 1fr;
   }
+  .photo-queue-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .photo-queue-heading > span {
+    width: fit-content;
+  }
   .admin-summary {
     grid-template-columns: 1fr;
   }
@@ -1533,6 +1622,16 @@ label {
   }
   .photo-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .queued-photo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .queued-photo-card {
+    grid-template-columns: 1fr;
+  }
+  .queued-photo-card > img {
+    aspect-ratio: 4 / 3;
+    min-height: 0;
   }
   .admin-user-form {
     grid-template-columns: 1.2fr 1.4fr 0.8fr auto;
