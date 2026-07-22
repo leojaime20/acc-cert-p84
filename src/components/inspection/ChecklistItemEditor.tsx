@@ -26,6 +26,7 @@ interface ChecklistItemEditorProps {
   onSaved: (item: InspectionItem, summary: InspectionSummary) => void;
   onPhotoAdded: (photo: InspectionPhoto) => void;
   onPhotoRemoved: (photoId: string) => void;
+  onPhotoQueueChange?: (queueId: string, pending: number, uploading: boolean) => void;
   onRegisterFlush?: (itemId: string, flush: (() => Promise<void>) | null) => void;
 }
 
@@ -38,6 +39,7 @@ export function ChecklistItemEditor({
   onSaved,
   onPhotoAdded,
   onPhotoRemoved,
+  onPhotoQueueChange,
   onRegisterFlush,
 }: ChecklistItemEditorProps) {
   const [status, setStatus] = useState(item.status);
@@ -176,11 +178,13 @@ export function ChecklistItemEditor({
         <PhotoUploader
           inspectionId={inspectionId}
           itemId={item.id}
+          queueId={`item:${item.id}`}
           photos={photos}
           user={user}
           editable={editable}
           onAdded={onPhotoAdded}
           onRemoved={onPhotoRemoved}
+          onPendingChange={onPhotoQueueChange}
         />
       </div>
     </details>

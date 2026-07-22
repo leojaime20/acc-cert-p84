@@ -55,6 +55,15 @@ export function InspectionPage() {
   const [openingDocuments, setOpeningDocuments] = useState(false);
   const [coResponsibleName, setCoResponsibleName] = useState('');
   const [savingCoResponsible, setSavingCoResponsible] = useState(false);
+  const [photoQueues, setPhotoQueues] = useState<
+    Record<string, { pending: number; uploading: boolean }>
+  >({});
+
+  const pendingPhotoCount = Object.values(photoQueues).reduce(
+    (total, queue) => total + queue.pending,
+    0,
+  );
+  const photoUploadsInProgress = Object.values(photoQueues).some((queue) => queue.uploading);
 
   const refreshInspection = useCallback(async () => {
     if (!inspectionId) return;
@@ -142,6 +151,16 @@ export function InspectionPage() {
     return () => window.clearInterval(timer);
   }, [inspection?.reportStatus, refreshInspection]);
 
+  useEffect(() => {
+    if (pendingPhotoCount === 0) return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeLeaving);
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving);
+  }, [pendingPhotoCount]);
+
   const editable = Boolean(
     profile &&
     inspection &&
@@ -164,6 +183,18 @@ export function InspectionPage() {
   function removePhoto(photoId: string) {
     setPhotos((current) => current.filter((photo) => photo.id !== photoId));
   }
+
+  const updatePhotoQueue = useCallback(
+    (queueId: string, pendingPhotos: number, uploading: boolean) => {
+      setPhotoQueues((current) => {
+        const next = { ...current };
+        if (pendingPhotos > 0 || uploading) next[queueId] = { pending: pendingPhotos, uploading };
+        else delete next[queueId];
+        return next;
+      });
+    },
+    [],
+  );
 
   async function saveCoResponsible() {
     if (!inspectionId) return;
@@ -216,6 +247,14 @@ export function InspectionPage() {
 
   async function openDocuments() {
     if (!inspectionId) return;
+    if (pendingPhotoCount > 0) {
+      setError(
+        `Upload or remove the ${pendingPhotoCount} queued ${
+          pendingPhotoCount === 1 ? 'photo' : 'photos'
+        } before opening documents.`,
+      );
+      return;
+    }
     setOpeningDocuments(true);
     setError('');
     try {
@@ -230,6 +269,14 @@ export function InspectionPage() {
 
   async function handleFinalize() {
     if (!inspectionId) return;
+    if (pendingPhotoCount > 0) {
+      setPending([
+        `Upload or remove the ${pendingPhotoCount} queued ${
+          pendingPhotoCount === 1 ? 'photo' : 'photos'
+        } before completing the inspection.`,
+      ]);
+      return;
+    }
     setFinalizing(true);
     setPending([]);
     setError('');
@@ -253,11 +300,17 @@ export function InspectionPage() {
         {inspection && (
           <button
             className="button inspection-documents-button"
-            disabled={openingDocuments}
+            disabled={openingDocuments || photoUploadsInProgress}
             onClick={() => void openDocuments()}
           >
             <span aria-hidden="true">PDF</span>
-            <strong>{openingDocuments ? 'Saving…' : 'Documents'}</strong>
+            <strong>
+              {photoUploadsInProgress
+                ? 'Uploading photos…'
+                : openingDocuments
+                  ? 'Saving…'
+                  : 'Documents'}
+            </strong>
             {documentCount > 0 && <small>{documentCount}</small>}
           </button>
         )}
@@ -326,6 +379,19 @@ export function InspectionPage() {
             </div>
           </div>
 
+          {pendingPhotoCount > 0 && (
+            <div className="notice notice-warning photo-queue-summary" role="status">
+              <strong>
+                {pendingPhotoCount} {pendingPhotoCount === 1 ? 'photo' : 'photos'} awaiting upload
+              </strong>
+              <span>
+                {photoUploadsInProgress
+                  ? 'The photo batches are being processed.'
+                  : 'Confirm each batch before leaving or completing the inspection.'}
+              </span>
+            </div>
+          )}
+
           <section className="general-photos-section">
             <div className="section-heading">
               <p className="eyebrow">Area overview</p>
@@ -335,11 +401,13 @@ export function InspectionPage() {
             <PhotoUploader
               inspectionId={inspection.id}
               itemId={null}
+              queueId="general"
               photos={generalPhotos}
               user={profile}
               editable={editable}
               onAdded={addPhoto}
               onRemoved={removePhoto}
+              onPendingChange={updatePhotoQueue}
             />
           </section>
 
@@ -362,6 +430,7 @@ export function InspectionPage() {
                 onSaved={updateLocalItem}
                 onPhotoAdded={addPhoto}
                 onPhotoRemoved={removePhoto}
+                onPhotoQueueChange={updatePhotoQueue}
                 onRegisterFlush={registerPendingFlush}
               />
             ))}
@@ -386,10 +455,14 @@ export function InspectionPage() {
               </div>
               <button
                 className="button button-primary compact-button"
-                disabled={finalizing}
+                disabled={finalizing || photoUploadsInProgress}
                 onClick={() => void handleFinalize()}
               >
-                {finalizing ? 'Validating…' : 'Complete inspection'}
+                {photoUploadsInProgress
+                  ? 'Uploading photos…'
+                  : finalizing
+                    ? 'Validating…'
+                    : 'Complete inspection'}
               </button>
             </div>
           )}
