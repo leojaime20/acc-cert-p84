@@ -30,6 +30,9 @@ const INSPECTION_HEADERS = [
   'area_location',
   'checklist_code',
   'inspection_status',
+  'inspection_type',
+  'source_inspection_id',
+  'source_inspection_code',
   'inspection_date',
   'completed_at',
   'inspector_id',
@@ -37,9 +40,8 @@ const INSPECTION_HEADERS = [
   'inspector_email',
   'summary_total',
   'summary_pending',
-  'summary_approved',
-  'summary_partially_approved',
-  'summary_rejected',
+  'summary_ok',
+  'summary_punch_list',
   'summary_not_applicable',
   'general_photo_count',
   'general_photo_files',
@@ -87,6 +89,12 @@ async function loadInspectionExport(inspection: DataRecord): Promise<InspectionE
     items: itemsSnapshot.docs.map((item) => ({ id: item.id, ...item.data() })),
     photos: photosSnapshot.docs.map((photo) => ({ id: photo.id, ...photo.data() })),
   };
+}
+
+function exportedItemStatus(status: unknown): string {
+  if (status === 'approved') return 'ok';
+  if (status === 'rejected' || status === 'partially_approved') return 'punch_list';
+  return typeof status === 'string' ? status : '';
 }
 
 async function loadAllInspections() {
@@ -203,6 +211,9 @@ export const exportDashboardPackage = onCall(
         area_location: inspection.areaLocation,
         checklist_code: inspection.checklistTemplateCode,
         inspection_status: inspection.status,
+        inspection_type: inspection.inspectionType || 'initial',
+        source_inspection_id: inspection.sourceInspectionId,
+        source_inspection_code: inspection.sourceInspectionCode,
         inspection_date: timestampToIso(inspection.inspectionDate),
         completed_at: timestampToIso(inspection.completedAt),
         inspector_id: inspection.inspectorId,
@@ -210,9 +221,11 @@ export const exportDashboardPackage = onCall(
         inspector_email: inspection.inspectorEmail,
         summary_total: inspection.summary?.total || 0,
         summary_pending: inspection.summary?.notStarted || 0,
-        summary_approved: inspection.summary?.approved || 0,
-        summary_partially_approved: inspection.summary?.partiallyApproved || 0,
-        summary_rejected: inspection.summary?.rejected || 0,
+        summary_ok: inspection.summary?.ok ?? inspection.summary?.approved ?? 0,
+        summary_punch_list:
+          inspection.summary?.punchList ??
+          Number(inspection.summary?.rejected || 0) +
+            Number(inspection.summary?.partiallyApproved || 0),
         summary_not_applicable: inspection.summary?.notApplicable || 0,
         general_photo_count: generalPhotoPaths.length,
         general_photo_files: generalPhotoPaths.join('|'),
@@ -230,7 +243,7 @@ export const exportDashboardPackage = onCall(
           item_code: item.code,
           item_description: item.description,
           verification_instruction: item.verificationInstruction,
-          item_status: item.status,
+          item_status: exportedItemStatus(item.status),
           comment: item.comment,
           recommendation: item.recommendation,
           photo_required: item.photoRequired,

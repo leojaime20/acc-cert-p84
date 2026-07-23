@@ -261,9 +261,14 @@ export function PhotoUploader({
                   </small>
                 </div>
               )}
-              {(photo.caption || editable) && (
+              {(photo.caption || photo.inheritedFromInspectionId || editable) && (
                 <figcaption>
-                  <span>{photo.caption || 'No caption'}</span>
+                  <span>
+                    {photo.caption || 'No caption'}
+                    {photo.inheritedFromInspectionId && (
+                      <small className="inherited-photo-label">Previous inspection</small>
+                    )}
+                  </span>
                   {editable && (
                     <button
                       type="button"

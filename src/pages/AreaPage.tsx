@@ -27,10 +27,15 @@ export function AreaPage() {
     setCreating(true);
     setError('');
     try {
-      const inspectionId = await createInspection(area, profile);
+      const inspectionId = await createInspection(area);
       navigate(`/inspections/${inspectionId}`);
-    } catch {
-      setError('Unable to create the inspection. Try again.');
+    } catch (createError) {
+      const details = (createError as { details?: { reason?: string } }).details;
+      setError(
+        details?.reason === 'no-punch-list-items'
+          ? 'The latest inspection has no Punch List items. A follow-up is not required.'
+          : 'Unable to create the inspection. Try again.',
+      );
       setCreating(false);
     }
   }
@@ -59,7 +64,9 @@ export function AreaPage() {
       <div className="action-card">
         <h2>New inspection</h2>
         <p>
-          The area checklist will be copied into a new draft for <strong>{profile?.name}</strong>.
+          For <strong>{profile?.name}</strong>, the first inspection uses the full area checklist.
+          Follow-ups carry the full previous checklist, including every status, comment and item
+          photo, so the final report remains complete.
         </p>
         <button
           className="button button-primary"

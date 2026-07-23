@@ -10,6 +10,7 @@ export async function requireActiveUser(request: CallableRequest<unknown>) {
   return { uid: request.auth.uid, ...profile.data() } as {
     uid: string;
     name: string;
+    email?: string;
     role: 'admin' | 'inspector' | 'viewer';
     projectIds: string[];
   };

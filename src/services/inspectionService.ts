@@ -9,12 +9,10 @@ import {
   serverTimestamp,
   updateDoc,
   where,
-  writeBatch,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db } from '../lib/firebase/firestore';
 import { functions } from '../lib/firebase/functions';
-import type { ChecklistTemplate, ChecklistTemplateItem } from '../types/checklist';
 import type {
   ChecklistItemStatus,
   Inspection,
@@ -22,103 +20,85 @@ import type {
   InspectionSummary,
 } from '../types/inspection';
 import type { Area } from '../types/project';
-import type { UserProfile } from '../types/user';
+
+type StoredChecklistItemStatus =
+  ChecklistItemStatus | 'approved' | 'partially_approved' | 'rejected';
+
+interface StoredInspectionSummary {
+  total?: number;
+  notStarted?: number;
+  ok?: number;
+  punchList?: number;
+  notApplicable?: number;
+  approved?: number;
+  partiallyApproved?: number;
+  rejected?: number;
+}
+
+function normalizeItemStatus(status: StoredChecklistItemStatus): ChecklistItemStatus {
+  if (status === 'approved') return 'ok';
+  if (status === 'rejected' || status === 'partially_approved') return 'punch_list';
+  return status;
+}
+
+function normalizeSummary(summary: StoredInspectionSummary): InspectionSummary {
+  return {
+    total: Number(summary.total || 0),
+    notStarted: Number(summary.notStarted || 0),
+    ok: Number(summary.ok ?? summary.approved ?? 0),
+    punchList: Number(
+      summary.punchList ?? Number(summary.rejected || 0) + Number(summary.partiallyApproved || 0),
+    ),
+    notApplicable: Number(summary.notApplicable || 0),
+  };
+}
+
+function normalizeInspection(id: string, data: Record<string, unknown>): Inspection {
+  return {
+    id,
+    ...data,
+    summary: normalizeSummary((data.summary || {}) as StoredInspectionSummary),
+  } as Inspection;
+}
 
 function requireDb() {
   if (!db) throw new Error('Firebase is not configured.');
   return db;
 }
 
-function inspectionCode(area: Area) {
-  const date = new Date();
-  const day = [date.getFullYear(), date.getMonth() + 1, date.getDate()]
-    .map((value) => String(value).padStart(2, '0'))
-    .join('');
-  const time = [date.getHours(), date.getMinutes(), date.getSeconds()]
-    .map((value) => String(value).padStart(2, '0'))
-    .join('');
-  return `${area.projectId.toUpperCase()}-${area.code}-${day}-${time}`;
-}
-
-export async function createInspection(area: Area, inspector: UserProfile) {
-  const firestore = requireDb();
-  const templateRef = doc(firestore, 'checklistTemplates', area.checklistTemplateId);
-  const [templateSnapshot, itemSnapshots] = await Promise.all([
-    getDoc(templateRef),
-    getDocs(query(collection(templateRef, 'items'), orderBy('order'))),
-  ]);
-
-  if (!templateSnapshot.exists()) throw new Error('Area checklist not found.');
-  if (itemSnapshots.empty) throw new Error('The checklist has no active items.');
-
-  const template = { id: templateSnapshot.id, ...templateSnapshot.data() } as ChecklistTemplate;
-  const activeItems = itemSnapshots.docs
-    .map((item) => ({ id: item.id, ...item.data() }) as ChecklistTemplateItem)
-    .filter((item) => item.active);
-  if (activeItems.length === 0) throw new Error('The checklist has no active items.');
-
-  const inspectionRef = doc(collection(firestore, 'inspections'));
-  const batch = writeBatch(firestore);
-  batch.set(inspectionRef, {
-    code: inspectionCode(area),
-    projectId: area.projectId,
-    areaId: area.id,
-    areaCode: area.code,
-    areaName: area.name,
-    areaLocation: area.location,
-    checklistTemplateId: template.id,
-    checklistTemplateCode: template.code,
-    checklistTemplateVersion: template.version,
-    inspectorId: inspector.uid,
-    inspectorName: inspector.name,
-    inspectorEmail: inspector.email,
-    status: 'draft',
-    inspectionDate: serverTimestamp(),
-    summary: {
-      total: activeItems.length,
-      notStarted: activeItems.length,
-      approved: 0,
-      partiallyApproved: 0,
-      rejected: 0,
-      notApplicable: 0,
-    },
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-
-  for (const item of activeItems) {
-    batch.set(doc(inspectionRef, 'items', item.id), {
-      templateItemId: item.id,
-      itemNumber: item.itemNumber,
-      code: `${template.code}-${String(item.itemNumber).padStart(2, '0')}`,
-      description: item.description,
-      verificationInstruction: item.verificationInstruction || item.description,
-      order: item.order,
-      required: item.required,
-      photoRequired: item.photoRequired,
-      status: 'not_started',
-      comment: '',
-      recommendation: '',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-  }
-
-  await batch.commit();
-  return inspectionRef.id;
+export async function createInspection(area: Area) {
+  if (!functions) throw new Error('Firebase is not configured.');
+  const create = httpsCallable<
+    { projectId: string; areaId: string },
+    {
+      inspectionId: string;
+      inspectionType: 'initial' | 'follow_up';
+      sourceInspectionId?: string;
+      itemCount: number;
+      inheritedPhotoCount: number;
+    }
+  >(functions, 'createInspection');
+  return (await create({ projectId: area.projectId, areaId: area.id })).data.inspectionId;
 }
 
 export async function getInspection(inspectionId: string) {
   const snapshot = await getDoc(doc(requireDb(), 'inspections', inspectionId));
   if (!snapshot.exists()) throw new Error('Inspection not found.');
-  return { id: snapshot.id, ...snapshot.data() } as Inspection;
+  return normalizeInspection(snapshot.id, snapshot.data());
 }
 
 export async function listInspectionItems(inspectionId: string) {
   const snapshot = await getDocs(
     query(collection(requireDb(), 'inspections', inspectionId, 'items'), orderBy('order')),
   );
-  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as InspectionItem);
+  return snapshot.docs.map((item) => {
+    const data = item.data();
+    return {
+      id: item.id,
+      ...data,
+      status: normalizeItemStatus(data.status as StoredChecklistItemStatus),
+    } as InspectionItem;
+  });
 }
 
 export async function listInspections(projectIds: string[], isAdmin: boolean) {
@@ -132,17 +112,14 @@ export async function listInspections(projectIds: string[], isAdmin: boolean) {
       );
 
   return snapshots
-    .flatMap((snapshot) =>
-      snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as Inspection),
-    )
+    .flatMap((snapshot) => snapshot.docs.map((item) => normalizeInspection(item.id, item.data())))
     .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
 }
 
 const summaryKeys: Record<ChecklistItemStatus, keyof InspectionSummary> = {
   not_started: 'notStarted',
-  approved: 'approved',
-  partially_approved: 'partiallyApproved',
-  rejected: 'rejected',
+  ok: 'ok',
+  punch_list: 'punchList',
   not_applicable: 'notApplicable',
 };
 
@@ -162,11 +139,14 @@ export async function updateInspectionItem(
       throw new Error('Inspection or item not found.');
     }
 
-    const inspection = inspectionSnapshot.data() as Inspection;
-    const previousItem = itemSnapshot.data() as InspectionItem;
-    const summary = { ...inspection.summary };
-    if (previousItem.status !== changes.status) {
-      summary[summaryKeys[previousItem.status]] -= 1;
+    const inspection = inspectionSnapshot.data();
+    const previousItem = itemSnapshot.data() as Omit<InspectionItem, 'status'> & {
+      status: StoredChecklistItemStatus;
+    };
+    const previousStatus = normalizeItemStatus(previousItem.status);
+    const summary = normalizeSummary(inspection.summary || {});
+    if (previousStatus !== changes.status) {
+      summary[summaryKeys[previousStatus]] -= 1;
       summary[summaryKeys[changes.status]] += 1;
     }
 

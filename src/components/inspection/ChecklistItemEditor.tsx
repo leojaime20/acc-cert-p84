@@ -10,9 +10,8 @@ import type { UserProfile } from '../../types/user';
 import { PhotoUploader } from './PhotoUploader';
 
 const statuses: Array<{ value: ChecklistItemStatus; label: string; short: string }> = [
-  { value: 'approved', label: 'Approved', short: 'Approved' },
-  { value: 'partially_approved', label: 'Partially approved', short: 'Partial' },
-  { value: 'rejected', label: 'Rejected', short: 'Rejected' },
+  { value: 'ok', label: 'Ok', short: 'Ok' },
+  { value: 'punch_list', label: 'Punch List', short: 'Punch List' },
   { value: 'not_applicable', label: 'Not applicable', short: 'N/A' },
   { value: 'not_started', label: 'Not verified', short: 'Pending' },
 ];
@@ -96,8 +95,7 @@ export function ChecklistItemEditor({
   }, [flushPendingText, item.id, onRegisterFlush]);
 
   const statusLabel = statuses.find((option) => option.value === status)?.short || 'Pending';
-  const needsComment = status === 'rejected' || status === 'partially_approved';
-  const needsRecommendation = status === 'rejected';
+  const needsComment = status === 'punch_list';
 
   return (
     <details className={`checklist-editor item-${status}`}>
@@ -121,20 +119,22 @@ export function ChecklistItemEditor({
             Item status {item.required && <span className="required-mark">Required</span>}
           </legend>
           <div className="status-options">
-            {statuses.slice(0, 4).map((option) => (
-              <button
-                type="button"
-                key={option.value}
-                className={`status-option option-${option.value} ${status === option.value ? 'selected' : ''}`}
-                aria-pressed={status === option.value}
-                onClick={() => {
-                  setStatus(option.value);
-                  void save(option.value, comment, recommendation);
-                }}
-              >
-                {option.label}
-              </button>
-            ))}
+            {statuses
+              .filter((option) => option.value !== 'not_started')
+              .map((option) => (
+                <button
+                  type="button"
+                  key={option.value}
+                  className={`status-option option-${option.value} ${status === option.value ? 'selected' : ''}`}
+                  aria-pressed={status === option.value}
+                  onClick={() => {
+                    setStatus(option.value);
+                    void save(option.value, comment, recommendation);
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
           </div>
         </fieldset>
         <label>
@@ -153,8 +153,7 @@ export function ChecklistItemEditor({
           />
         </label>
         <label>
-          Recommendation or corrective action{' '}
-          {needsRecommendation && <span className="required-text">required</span>}
+          Recommendation or corrective action
           <textarea
             value={recommendation}
             disabled={!editable}

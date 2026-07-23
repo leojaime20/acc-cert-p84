@@ -316,6 +316,19 @@ export function InspectionPage() {
         )}
       </div>
       {error && <div className="notice notice-error">{error}</div>}
+      {inspection?.inspectionType === 'follow_up' && (
+        <div className="notice notice-info follow-up-notice">
+          <strong>Follow-up inspection</strong>
+          <span>
+            All items from{' '}
+            {inspection.sourceInspectionCode ||
+              inspection.sourceInspectionId ||
+              'the previous inspection'}
+            are included with their previous statuses, comments and photos. Review the remaining
+            Punch List items before completion.
+          </span>
+        </div>
+      )}
       {inspection && profile && (
         <>
           <div className="inspection-meta">
@@ -362,16 +375,12 @@ export function InspectionPage() {
               <span>Pending</span>
             </div>
             <div>
-              <strong>{inspection.summary.approved}</strong>
-              <span>Approved</span>
+              <strong>{inspection.summary.ok}</strong>
+              <span>Ok</span>
             </div>
             <div>
-              <strong>{inspection.summary.partiallyApproved}</strong>
-              <span>Partial</span>
-            </div>
-            <div>
-              <strong>{inspection.summary.rejected}</strong>
-              <span>Rejected</span>
+              <strong>{inspection.summary.punchList}</strong>
+              <span>Punch List</span>
             </div>
             <div>
               <strong>{inspection.summary.notApplicable}</strong>

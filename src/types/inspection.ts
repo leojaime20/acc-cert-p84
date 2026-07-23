@@ -1,15 +1,13 @@
 import type { Timestamp } from 'firebase/firestore';
 
 export type InspectionStatus = 'draft' | 'completed' | 'reopened' | 'cancelled';
-export type ChecklistItemStatus =
-  'not_started' | 'approved' | 'partially_approved' | 'rejected' | 'not_applicable';
+export type ChecklistItemStatus = 'not_started' | 'ok' | 'punch_list' | 'not_applicable';
 
 export interface InspectionSummary {
   total: number;
   notStarted: number;
-  approved: number;
-  partiallyApproved: number;
-  rejected: number;
+  ok: number;
+  punchList: number;
   notApplicable: number;
 }
 
@@ -28,6 +26,10 @@ export interface Inspection {
   inspectorName: string;
   inspectorEmail: string;
   coResponsibleName?: string;
+  inspectionType?: 'initial' | 'follow_up';
+  sourceInspectionId?: string;
+  sourceInspectionCode?: string;
+  inheritedPhotoCount?: number;
   status: InspectionStatus;
   inspectionDate: Timestamp;
   summary: InspectionSummary;
@@ -53,6 +55,7 @@ export interface InspectionItem {
   status: ChecklistItemStatus;
   comment: string;
   recommendation: string;
+  sourceInspectionId?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -75,6 +78,8 @@ export interface InspectionPhoto {
   errorCode?: string;
   errorMessage?: string;
   loadError?: string;
+  inheritedFromInspectionId?: string;
+  inheritedFromPhotoId?: string;
   createdBy: string;
   createdByName: string;
   createdAt: Timestamp;
