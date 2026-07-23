@@ -14,8 +14,6 @@ const COLORS = {
   white: '#ffffff',
   red: '#a92f2f',
   redSoft: '#fbeeee',
-  amber: '#9a6400',
-  amberSoft: '#fff6dc',
   blue: '#245b8f',
   blueSoft: '#edf4fb',
 };
@@ -30,13 +28,11 @@ const PAGE = {
 
 const STATUS: Record<string, { label: string; color: string; background: string }> = {
   not_started: { label: 'Pending', color: COLORS.muted, background: '#eef1f2' },
-  approved: { label: 'Approved', color: COLORS.greenDark, background: COLORS.greenSoft },
-  partially_approved: {
-    label: 'Partially approved',
-    color: COLORS.amber,
-    background: COLORS.amberSoft,
-  },
-  rejected: { label: 'Rejected', color: COLORS.red, background: COLORS.redSoft },
+  ok: { label: 'Ok', color: COLORS.greenDark, background: COLORS.greenSoft },
+  punch_list: { label: 'Punch List', color: COLORS.red, background: COLORS.redSoft },
+  approved: { label: 'Ok', color: COLORS.greenDark, background: COLORS.greenSoft },
+  partially_approved: { label: 'Punch List', color: COLORS.red, background: COLORS.redSoft },
+  rejected: { label: 'Punch List', color: COLORS.red, background: COLORS.redSoft },
   not_applicable: { label: 'Not applicable', color: COLORS.blue, background: COLORS.blueSoft },
 };
 
@@ -443,7 +439,15 @@ export async function createInspectionPdf(
     );
     const y4 = y3 + 58;
     field(PAGE.left, y4, 253, 'Location / deck', inspection.areaLocation);
-    field(PAGE.left + 262, y4, 253, 'Document status', 'Inspection completed');
+    field(
+      PAGE.left + 262,
+      y4,
+      253,
+      'Document status',
+      inspection.sourceInspectionCode
+        ? `Follow-up of ${inspection.sourceInspectionCode}`
+        : 'Inspection completed',
+    );
     const y5 = y4 + 58;
     field(PAGE.left, y5, 253, 'Responsible inspector', inspection.inspectorName);
     field(PAGE.left + 262, y5, 253, 'Inspector email', inspection.inspectorEmail);
@@ -459,14 +463,14 @@ export async function createInspectionPdf(
 
     sectionTitle('Results summary', 'Summary of items recorded in the checklist');
     const cardGap = 7;
-    const cardWidth = (PAGE.width - cardGap * 4) / 5;
+    const cardWidth = (PAGE.width - cardGap * 3) / 4;
     const summaryY = document.y;
     summaryCard(
       PAGE.left,
       summaryY,
       cardWidth,
-      Number(inspection.summary?.approved || 0),
-      'Approved',
+      Number(inspection.summary?.ok ?? inspection.summary?.approved ?? 0),
+      'Ok',
       COLORS.greenDark,
       COLORS.greenSoft,
     );
@@ -474,22 +478,17 @@ export async function createInspectionPdf(
       PAGE.left + (cardWidth + cardGap),
       summaryY,
       cardWidth,
-      Number(inspection.summary?.partiallyApproved || 0),
-      'Partial',
-      COLORS.amber,
-      COLORS.amberSoft,
-    );
-    summaryCard(
-      PAGE.left + (cardWidth + cardGap) * 2,
-      summaryY,
-      cardWidth,
-      Number(inspection.summary?.rejected || 0),
-      'Rejected',
+      Number(
+        inspection.summary?.punchList ??
+          Number(inspection.summary?.rejected || 0) +
+            Number(inspection.summary?.partiallyApproved || 0),
+      ),
+      'Punch List',
       COLORS.red,
       COLORS.redSoft,
     );
     summaryCard(
-      PAGE.left + (cardWidth + cardGap) * 3,
+      PAGE.left + (cardWidth + cardGap) * 2,
       summaryY,
       cardWidth,
       Number(inspection.summary?.notApplicable || 0),
@@ -498,7 +497,7 @@ export async function createInspectionPdf(
       COLORS.blueSoft,
     );
     summaryCard(
-      PAGE.left + (cardWidth + cardGap) * 4,
+      PAGE.left + (cardWidth + cardGap) * 3,
       summaryY,
       cardWidth,
       Number(inspection.summary?.total || items.length),

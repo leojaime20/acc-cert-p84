@@ -35,9 +35,8 @@ export const finalizeInspection = onCall<FinalizeRequest>(
       const summary = {
         total: itemSnapshots.size,
         notStarted: 0,
-        approved: 0,
-        partiallyApproved: 0,
-        rejected: 0,
+        ok: 0,
+        punchList: 0,
         notApplicable: 0,
       };
 
@@ -46,17 +45,18 @@ export const finalizeInspection = onCall<FinalizeRequest>(
       for (const itemSnapshot of itemSnapshots.docs) {
         const item = itemSnapshot.data();
         if (item.status === 'not_started') summary.notStarted += 1;
-        if (item.status === 'approved') summary.approved += 1;
-        if (item.status === 'partially_approved') summary.partiallyApproved += 1;
-        if (item.status === 'rejected') summary.rejected += 1;
+        if (['ok', 'approved'].includes(item.status)) summary.ok += 1;
+        if (['punch_list', 'rejected', 'partially_approved'].includes(item.status)) {
+          summary.punchList += 1;
+        }
         if (item.status === 'not_applicable') summary.notApplicable += 1;
         const label = item.code || `Item ${item.itemNumber || itemSnapshot.id}`;
         if (item.required && item.status === 'not_started') pending.push(`${label}: not verified`);
-        if (['rejected', 'partially_approved'].includes(item.status) && !item.comment?.trim()) {
+        if (
+          ['punch_list', 'rejected', 'partially_approved'].includes(item.status) &&
+          !item.comment?.trim()
+        ) {
           pending.push(`${label}: comment is required`);
-        }
-        if (item.status === 'rejected' && !item.recommendation?.trim()) {
-          pending.push(`${label}: recommendation is required`);
         }
         if (item.photoRequired && !photos.some((photo) => photo.itemId === itemSnapshot.id)) {
           pending.push(`${label}: photo is required`);

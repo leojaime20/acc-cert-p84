@@ -27,11 +27,30 @@ service cloud.firestore {
     }
 
     function validItemStatus(status) {
-      return status in ['not_started', 'approved', 'partially_approved', 'rejected', 'not_applicable'];
+      return status in ['not_started', 'ok', 'punch_list', 'not_applicable'];
     }
 
-    function validSummary(summary, previousSummary) {
-      return summary.total == previousSummary.total
+    function validCurrentSummary(summary, previousSummary) {
+      return summary.keys().hasAll(['total', 'notStarted', 'ok', 'punchList', 'notApplicable'])
+        && summary.total == previousSummary.total
+        && summary.notStarted >= 0
+        && summary.ok >= 0
+        && summary.punchList >= 0
+        && summary.notApplicable >= 0
+        && summary.notStarted + summary.ok + summary.punchList
+          + summary.notApplicable == summary.total;
+    }
+
+    function validLegacySummary(summary, previousSummary) {
+      return summary.keys().hasAll([
+          'total',
+          'notStarted',
+          'approved',
+          'partiallyApproved',
+          'rejected',
+          'notApplicable'
+        ])
+        && summary.total == previousSummary.total
         && summary.notStarted >= 0
         && summary.approved >= 0
         && summary.partiallyApproved >= 0
@@ -39,6 +58,11 @@ service cloud.firestore {
         && summary.notApplicable >= 0
         && summary.notStarted + summary.approved + summary.partiallyApproved
           + summary.rejected + summary.notApplicable == summary.total;
+    }
+
+    function validSummary(summary, previousSummary) {
+      return validCurrentSummary(summary, previousSummary)
+        || validLegacySummary(summary, previousSummary);
     }
 
     match /users/{userId} {
